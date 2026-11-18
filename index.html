@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarsiBisPlan — планировщик коммерческих пространств</title>
+<meta name="description" content="Научно-обоснованное планирование выставочных стендов, торговых и бизнес-помещений и коммерческих композиций: декомпозиция МАРСИ, марковская модель воронки продаж (MDP), клей Φjk и имитационная валидация.">
+<meta name="theme-color" content="#2456d6">
+<meta property="og:title" content="MarsiBisPlan — планировщик коммерческих пространств">
+<meta property="og:description" content="Декомпозиция МАРСИ + марковская модель воронки продаж: оптимальные тактики, композиция зон, симуляция 10⁴ посетителей и протокол с KPI.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ru_RU">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MarsiBisPlan">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232456d6'/%3E%3Cstop offset='1' stop-color='%236a3fc0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='40' font-family='Arial,sans-serif' font-size='19' font-weight='700' fill='%23fff' text-anchor='middle'%3EMB%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f6f7f9; --card:#ffffff; --ink:#1a2233; --mut:#5b6577; --line:#dfe3ea;
+  --blue:#2456d6; --blue2:#e8eeff; --green:#0e8a4d; --green2:#e4f5ec; --red:#c23a3a; --red2:#fbeaea;
+  --amber:#b97a12; --amber2:#fdf3e0; --vio:#6a3fc0; --vio2:#f0eafc;
+  --rad:12px; --shadow:0 1px 3px rgba(20,30,60,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PT Sans",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.55}
+header.top{position:sticky;top:0;z-index:50;background:var(--card);border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
+.hwrap{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px}
+.logo .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--vio));color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;letter-spacing:.5px}
+.logo small{display:block;font-weight:400;color:var(--mut);font-size:11.5px;line-height:1.2}
+.hbtns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:7px 13px;font-size:13.5px;cursor:pointer;transition:.15s}
+.btn:hover{border-color:var(--blue);color:var(--blue)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:#1c46b8}
+.btn.danger:hover{border-color:var(--red);color:var(--red)}
+.btn.ghost{background:transparent}
+nav.tabs{max-width:1180px;margin:0 auto;padding:0 18px;display:flex;gap:4px;overflow-x:auto}
+nav.tabs button{border:none;background:transparent;padding:10px 14px 8px;font-size:14px;color:var(--mut);cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap}
+nav.tabs button.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+nav.tabs button:hover{color:var(--blue)}
+main{max-width:1180px;margin:0 auto;padding:20px 18px 70px}
+section.tab{display:none}
+section.tab.on{display:block;animation:fade .18s}
+@keyframes fade{from{opacity:.4}to{opacity:1}}
+h1{font-size:25px;margin:.2em 0 .4em}
+h2{font-size:19px;margin:1.4em 0 .5em}
+h3{font-size:15.5px;margin:1.1em 0 .4em}
+p.lead{color:var(--mut);max-width:900px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:18px 20px;margin:14px 0;box-shadow:var(--shadow)}
+.card h3:first-child{margin-top:0}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+label.f{display:block;font-size:13px;color:var(--mut);margin:9px 0 3px}
+input[type=text],input[type=number],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
+input[type=range]{width:100%;accent-color:var(--blue)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:#fff}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{background:#f0f3f9;font-weight:600;font-size:12.5px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl{background:var(--green2)}
+tr.mut{color:var(--mut)}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600}
+.b-blue{background:var(--blue2);color:var(--blue)} .b-green{background:var(--green2);color:var(--green)}
+.b-red{background:var(--red2);color:var(--red)} .b-amber{background:var(--amber2);color:var(--amber)}
+.b-vio{background:var(--vio2);color:var(--vio)} .b-mut{background:#eef0f4;color:var(--mut)}
+.hint{font-size:12.5px;color:var(--mut)}
+.formula{background:#f4f6fb;border:1px solid #e3e9f6;border-radius:10px;padding:10px 14px;font-family:"STIX Two Math",Georgia,serif;font-size:15px;overflow-x:auto;margin:8px 0}
+.kv{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13.5px;margin:6px 0}
+.kv b{font-weight:600}
+.callout{border-left:4px solid var(--blue);background:var(--blue2);border-radius:0 10px 10px 0;padding:10px 14px;margin:12px 0;font-size:13.5px}
+.callout.warn{border-color:var(--amber);background:var(--amber2)}
+.callout.err{border-color:var(--red);background:var(--red2)}
+.callout.ok{border-color:var(--green);background:var(--green2)}
+.chart{width:100%;overflow-x:auto;margin:10px 0}
+.chart svg{max-width:100%;height:auto}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--mut);margin:4px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.scroll{overflow-x:auto}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.pill{border:1px solid var(--line);border-radius:20px;padding:3px 11px;font-size:12.5px;cursor:pointer;background:#fff}
+.pill.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn:focus-visible,.pill:focus-visible,nav.tabs button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.card.rec{border:2px solid var(--blue);position:relative}
+.rec-badge{position:absolute;top:-11px;left:16px;background:var(--blue);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600}
+#mQuiz{position:fixed;inset:0;background:rgba(20,30,60,.45);display:none;align-items:center;justify-content:center;z-index:900;padding:16px}
+#mQuiz .box{background:#fff;border-radius:14px;max-width:560px;width:100%;padding:20px 22px;box-shadow:0 12px 40px rgba(20,30,60,.25)}
+.mq-anchors{display:flex;justify-content:space-between;gap:16px;font-size:11.5px;color:var(--mut);margin-top:4px}
+.mq-stops{display:flex;gap:6px;margin:14px 0 8px}
+.mq-stop{flex:1;border:1.5px solid var(--line);border-radius:9px;padding:12px 6px;text-align:center;cursor:pointer;background:#fff;font-weight:700;font-size:15px}
+.mq-stop:hover{border-color:var(--blue);background:var(--blue2)}
+a.gl{color:inherit;text-decoration:underline dotted var(--blue) 1.5px;text-underline-offset:3px;cursor:help}
+a.gl:hover{color:var(--blue);background:var(--blue2);border-radius:3px}
+#glTip{position:fixed;z-index:1000;max-width:340px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(20,30,60,.18);padding:12px 14px;display:none;font-size:13px;line-height:1.5}
+#glTip b{font-size:14px}
+#glTip .cat{display:block;color:var(--mut);font-size:11px;margin:2px 0 6px;text-transform:uppercase;letter-spacing:.5px}
+#glTip .open{display:inline-block;margin-top:8px;color:var(--blue);cursor:pointer;text-decoration:underline;font-size:12px}
+.gl-item{border:1px solid var(--line);border-radius:8px;margin:6px 0;padding:7px 12px;background:#fff}
+.gl-item summary{cursor:pointer;font-weight:600;font-size:13.5px}
+.gl-item summary::marker{color:var(--blue)}
+.gl-item p{margin:7px 0 2px;color:var(--ink);font-size:13px}
+.gl-cat{margin:14px 0 4px;font-weight:700;color:var(--blue);font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+.mini{font-size:12px;color:var(--mut)}
+.etap{display:inline-block;font-weight:700;color:var(--blue)}
+.eth-list{list-style:none;padding:0}
+.eth-list li{padding:6px 0 6px 26px;position:relative;border-bottom:1px dashed var(--line)}
+.eth-list li:before{content:"✓";position:absolute;left:4px;color:var(--green);font-weight:700}
+.eth-list li.no:before{content:"✕";color:var(--red)}
+.src{font-size:12.5px;color:var(--mut)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:800px){.two-col{grid-template-columns:1fr}}
+.proto h2{page-break-after:avoid}
+.proto .card{page-break-inside:avoid}
+.wm{display:none}
+.wm2{display:none}
+@media print{
+  .free-print .wm{display:block;position:fixed;top:45%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:52px;font-weight:800;color:rgba(194,58,58,.12);white-space:nowrap;letter-spacing:4px;z-index:999;pointer-events:none}
+  .free-print .wm2{display:block;position:fixed;bottom:6px;left:0;right:0;text-align:center;font-size:11px;color:rgba(194,58,58,.55)}
+  body{background:#fff;font-size:12.5px}
+  header.top,nav.tabs,.noprint{display:none!important}
+  main{max-width:100%;padding:0}
+  section.tab{display:none}
+  section.tab#tab-protocol{display:block!important}
+  .card{box-shadow:none;border:1px solid #bbb}
+}
+.sv-label{font-size:11px;fill:var(--mut)}
+.sv-tick{font-size:10px;fill:#98a1b3}
+@media(max-width:640px){
+  .hwrap{padding:8px 10px}
+  .logo{font-size:14.5px}
+  .logo small{display:none}
+  .logo .mark{width:28px;height:28px;font-size:11px}
+  main{padding:12px 8px 60px}
+  .card{padding:12px 11px;border-radius:10px}
+  h1{font-size:20px}
+  h2{font-size:16.5px}
+  nav.tabs button{padding:8px 9px 6px;font-size:12px}
+  .btn{padding:8px 12px;font-size:13px}
+  input,select,textarea{font-size:16px}
+  .grid.g2,.grid.g3{grid-template-columns:1fr}
+  .chart svg{min-width:520px!important}
+  .kv{gap:6px 12px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="hwrap">
+    <div class="logo">
+      <div class="mark">MB</div>
+      <div>MarsiBisPlan
+        <small>планировщик коммерческих пространств: стенды · помещения · композиции</small>
+      </div>
+    </div>
+    <div class="hbtns noprint">
+      <span class="mini" id="saveStatus" style="align-self:center"></span>
+      <button class="btn" onclick="exportJSON()">Экспорт</button>
+      <button class="btn" onclick="document.getElementById('impFile').click()">Импорт</button>
+      <button class="btn" onclick="window.print()">Печать протокола</button>
+      <button class="btn danger" onclick="resetAll()">Сброс</button>
+      <input type="file" id="impFile" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+<main>
+
+<!-- ===================== ИНСТРУКЦИЯ ===================== -->
+<section class="tab" id="tab-guide">
+  <h1>С чего начать</h1>
+  <p class="lead">MarsiBisPlan помогает спланировать стенд, помещение или витрину так, чтобы больше посетителей доходило до покупки. Сервис раскладывает объект на зоны, вычисляет их приоритеты, подбирает последовательность приёмов продаж, проверяет совместимость зон и подтверждает план на виртуальном потоке посетителей.</p>
+
+  <div class="card">
+    <h3>🚀 Быстрый старт — 6 шагов</h3>
+    <ol>
+      <li><b>1. Объект и цель</b> — выберите адаптер (стенд / ритейл / услуги / композиция), профиль ЦА, бюджет, маржу G и горизонт T<sub>max</sub>.</li>
+      <li><b>2. Зоны и приоритеты</b> — нажмите 📋 у зоны и пройдите анкету из 7 вопросов с готовыми вариантами (или правьте числа вручную), задайте связи: движок покажет вес каждой зоны и корневую зону ★.</li>
+      <li><b>3. Приёмы</b> — при желании поправьте силу и стоимость приёмов (старт — калибровка по мета-анализам Чалдини). Пороги этапов — здесь же.</li>
+      <li><b>4. Стратегия</b> — нажмите «Подобрать оптимальную стратегию»: получите π*, оценку первого приёма и траекторию с углами φ. Кнопка «Самопроверка движка» проверяет математическое ядро.</li>
+      <li><b>5. Композиция</b> — совместимость зон (синергия / конфликт / запрет) и оптимальный набор зон в бюджете.</li>
+      <li><b>6. Проверка и План</b> — виртуальный поток посетителей (10⁴), сравнение с обычными подходами, затем «Печать» готового плана (PDF).</li>
+    </ol>
+  </div>
+
+  <div class="card noprint"><h3>Проекты и план</h3>
+    <p class="mini" style="margin-bottom:10px"><b>Проект</b> — это полный снимок вашей работы: объект, зоны с их весами <b>W</b>, приёмы, стратегия и композиция. Нажмите «Сохранить текущий как проект», чтобы зафиксировать прогресс: можно параллельно вести несколько стендов или помещений и переключаться между ними одним кликом — ничего не потеряется. Проекты хранятся локально в вашем браузере; сколько их можно хранить, зависит от плана доступа: Free — 1, Pro — 10, Business — 50.</p>
+  <div id="projBox"></div></div>
+
+  <div class="card">
+    <h3>Демо в один клик</h3>
+    <p class="mini">Загружает настройки по умолчанию (выставочный стенд, профиль «Директор по закупкам B2B», бюджет 60 у.е.), решает воронку и прогоняет симуляцию — остаётся только прочитать Протокол.</p>
+    <button class="btn primary" onclick="demoRun()">▶ Загрузить демо-сценарий</button>
+  </div>
+
+  <div class="card"><p class="mini">❓ <b>Частые вопросы и словарь терминов</b> — во вкладке <a href="javascript:void(0)" onclick="switchTab('tab-method')">«Как это работает»</a>.</p></div>
+
+
+
+  <div class="card">
+    <h3>Честные ограничения</h3>
+    <p class="mini">Калибровка силы приёмов опирается на опубликованные мета-анализы психологии влияния; собственные полевые данные (пилот на реальной выставке) — следующий шаг зрелости инструмента. Все расчёты детерминированы и воспроизводимы. Данные хранятся только у вас в браузере.</p>
+  </div>
+</section>
+
+<!-- ===================== 0. МЕТОДОЛОГИЯ ===================== -->
+<section class="tab" id="tab-method">
+  <h1>Как это работает</h1>
+  <p class="lead">MarsiBisPlan отвечает на четыре практических вопроса: <b>из чего состоит объект</b>, <b>как посетитель приходит к покупке</b>, <b>какие зоны совместимы друг с другом</b> и <b>что покажет реальный поток посетителей</b>. Все расчёты детерминированы и воспроизводимы — без нейросетей и «чёрных ящиков».</p>
+
+  <div class="card">
+    <h3>Общая схема — 4 шага</h3>
+    <table>
+      <tr><th>Шаг</th><th>Вопрос</th><th>Что вы получаете</th></tr>
+      <tr><td><b>1. Зоны и приоритеты</b></td><td>Из чего состоит объект и что важнее?</td><td>Список зон с весами и корневая зона ★ — точка, с которой выгоднее всего начинать.</td></tr>
+      <tr><td><b>2. Путь посетителя</b></td><td>Как посетитель движется от «холодного» к покупке?</td><td>Оптимальная последовательность приёмов продаж с ожидаемой прибылью.</td></tr>
+      <tr><td><b>3. Композиция зон</b></td><td>Какие зоны сочетаются и влезают в бюджет?</td><td>Лучший набор зон с учётом совместимости и стоимости.</td></tr>
+      <tr><td><b>4. Проверка</b></td><td>Что покажет живой поток посетителей?</td><td>Ожидаемая конверсия и прибыль + сравнение с обычными подходами к продажам.</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Шаг 1. Зоны и приоритеты</h3>
+    <p>Объект (стенд, помещение, витрина) раскладывается на <b>зоны</b> — атомарные элементы, которые дальше делить уже бессмысленно: входовая промо-зона, зона демонстрации, переговорная, касса. Каждая зона оценивается восемью простыми вопросами:</p>
+    <table>
+      <tr><th>Вопрос о зоне</th><th>Что означает</th></tr>
+      <tr><td><b>t — срочность</b></td><td>как быстро нужно заняться этой зоной</td></tr>
+      <tr><td><b>m — связь с пространством</b></td><td>насколько зона завязана на физическое расположение</td></tr>
+      <tr><td><b>f — факты</b></td><td>насколько данные о зоне подтверждены (замеры, опыт, а не догадки)</td></tr>
+      <tr><td><b>e — цель</b></td><td>насколько зона ведёт к вашей цели</td></tr>
+      <tr><td><b>y — цена промедления</b></td><td>что вы теряете, если не заняться зоной</td></tr>
+      <tr><td><b>g — достоверность</b></td><td>как уверенно вы оценили остальные ответы</td></tr>
+      <tr><td><b>h — выгода</b></td><td>сколько пользы принесёт доработка зоны</td></tr>
+      <tr><td><b>r — ресурсы</b></td><td>хватит ли денег и сил на доработку (ограничитель: решение не назначается без ресурса)</td></tr>
+    </table>
+    <p>Ответы приводятся к единой шкале 0–1 и складываются в <b>вес зоны W</b>: грубо говоря, «важность × реализуемость × достоверность». Дополнительная поправка на неопределённость (ε) честно снижает оценку там, где данных мало. Зоны связаны между собой (вход работает на демонстрацию, касса зависит от очереди) — поэтому движок считает ещё и <b>влияние зоны на связанные</b>, а зона с максимальным влиянием помечается ★: <b>корневая зона</b>, с которой начинать выгоднее всего.</p>
+    <p><b>Живой цикл:</b> внедрили доработку — отметьте это во вкладке 2 с обратной связью. Вес зоны снизится, связанные зоны пересчитаются, план обновится. Так за несколько итераций объект приходит к «норме».</p>
+  </div>
+
+  <div class="card">
+    <h3>Шаг 2. Путь посетителя</h3>
+    <p>Каждый посетитель находится где-то на шкале «холод → горячо»:</p>
+    <div class="formula">−1 &nbsp;потерян&nbsp; · &nbsp;0&nbsp; нейтрален &nbsp;·&nbsp; +1&nbsp; готов купить</div>
+    <p>Путь проходит три этапа: <b>Знакомство (TOFU)</b> → <b>Оценка (MOFU)</b> → <b>Решение (BOFU)</b>. Переход на следующий этап — когда нужные параметры (интерес, доверие, потребность, мотивация) преодолели порог; потеряли порог — посетитель откатывается назад.</p>
+    <p><b>Тактика</b> — конкретный приём продаж (живая демонстрация, дефицит, интервью, лосс-лидер…). Каждый приём <b>сдвигает состояние посетителя</b> (усиливает интерес, доверие, мотивацию — или травмирует их) и <b>стоит денег</b>. Реакции людей не одинаковы: движок учитывает случайный разброс, усталость от повторов (второй раз тот же приём работает вдвое слабее, третий — вредит) и потерю интереса при провале критического параметра (например, доверия).</p>
+    <p>Перебирая возможные последовательности приёмов, движок находит ту, что даёт <b>максимум ожидаемой прибыли</b> с одного посетителя. Из данных такое правило выводится само: например, на старте выгодно наращивать доверие, а срочность и дефицит подключать в конце — когда доверие уже накоплено.</p>
+    <p>Стартовая калибровка силы приёмов взята из мета-анализов психологии влияния (Р. Чалдини):</p>
+    <table>
+      <tr><th>Триггер</th><th>Сила</th><th>Риски (учтены в движке)</th></tr>
+      <tr><td>Дефицит и срочность</td><td>Высокая</td><td>ложный дефицит разрушает доверие; ограничение количества действует сильнее ограничения времени</td></tr>
+      <tr><td>Социальное доказательство</td><td>Средняя/высокая</td><td>работает при неопределённости; отзывы «себе подобных» убедительнее статистики</td></tr>
+      <tr><td>Взаимность</td><td>Средняя</td><td>эффект подарка угасает; распознанная «подкупка» вызывает сопротивление</td></tr>
+      <tr><td>Авторитет</td><td>Средняя</td><td>релевантный эксперт убеждает сильнее знаменитости</td></tr>
+      <tr><td>Последовательность</td><td>Умеренная</td><td>«нога в двери» требует логической связи шагов</td></tr>
+      <tr><td>Симпатия</td><td>Низкая/средняя</td><td>долгосрочный триггер, работает через близость ценностей</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Шаг 3. Совместимость зон</h3>
+    <p>Зоны влияют друг на друга, и это удобно описать четырьмя видами связи:</p>
+    <table>
+      <tr><th>Связь пары зон</th><th>Что значит</th><th>Пример</th></tr>
+      <tr><td><b>Синергия (+)</b></td><td>зоны усиливают друг друга — движок предпочитает такие пары</td><td>демонстрация у входа работает на поток</td></tr>
+      <tr><td><b>Нейтральность (0)</b></td><td>пары не влияют друг на друга</td><td>навигация и склад</td></tr>
+      <tr><td><b>Конфликт (−)</b></td><td>пара мешает друг другу — набор получает штраф</td><td>шумная касса рядом с переговорной</td></tr>
+      <tr><td><b>Запрет (−∞)</b></td><td>вместе назначать нельзя — движок исключит одну из зон</td><td>дегустация рядом с текстилем</td></tr>
+    </table>
+    <p>Компоновщик перебирает допустимые наборы зон (без запрещённых пар, в рамках бюджета) и выбирает набор с максимальной итоговой ценностью — с учётом весов зон, их совместимости и стоимости внедрения.</p>
+  </div>
+
+  <div class="card">
+    <h3>Шаг 4. Проверка на виртуальном потоке</h3>
+    <p>Прежде чем менять реальный стенд, стратегия проверяется на <b>виртуальных посетителях</b>: тысячи эпизодов с реакциями вашего профиля аудитории (со случайным разбросом, усталостью от повторов и потерей интереса). Стратегия π* сравнивается с тремя обычными подходами:</p>
+    <table>
+      <tr><th>Подход</th><th>Как работает</th></tr>
+      <tr><td><b>Случайный выбор (B1)</b></td><td>приёмы применяются как попало — нижняя граница качества</td></tr>
+      <tr><td><b>Типовой порядок (B2)</b></td><td>фиксированная последовательность «как всегда делаем»</td></tr>
+      <tr><td><b>Жадный выбор (B3)</b></td><td>каждый раз приём с максимальным мгновенным эффектом, без взгляда вперёд</td></tr>
+    </table>
+    <p>Метрики: конверсия, прибыль на посетителя, длина пути, доля потерянных по этапам — с доверительными интервалами. Проверяются три гипотезы: оптимум конвертит лучше типового порядка (H1), прибыльнее всех остальных (H2), и его преимущество растёт с неопределённостью и ценой ошибок (H3). Если гипотеза не подтверждается — это диагностический сигнал пересмотреть калибровку, а не повод скрывать результат.</p>
+  </div>
+
+  <div class="card">
+    <h3>Этика</h3>
+    <p>Инструмент построен как «подталкивание» (nudge), а не манипуляция: прозрачность, соответствие приёмов реальным свойствам продукта, запрет ложного дефицита, уважение к сопротивлению посетителя. Данные о реальных людях (если вы их собираете) — только с согласия и по требованиям законодательства о персональных данных (152-ФЗ).</p>
+  </div>
+
+  <div class="card">
+    <h3>Частые вопросы</h3>
+    <p><b>Что такое ячейка?</b> Атомарный элемент планирования, «дальше не делится без потери смысла» (МАРСИ): зона стенда, витрина, точка контакта.</p>
+    <p><b>Как поле «Цель» влияет на расчёт?</b> По формулировке детерминированный словарь подбирает пресет — «максимум сделок», «лиды и контакты», «узнаваемость и трафик», «средний чек». Пресет меняет важность параметров, порог сделки и бонус за этап; всё показано открыто и правится вручную. Без нейросетей: одна и та же формулировка всегда даёт один и тот же результат.</p>
+    <p><b>Что делать после внедрения?</b> Вернитесь во вкладку 2, укажите выполненный микро-метод и обратную связь (−1…+1) — веса пересчитаются, это и есть итеративный цикл МАРСИ (шаг i → i+1).</p>
+    <p><b>Гипотеза H1/H3 «не подтверждена»?</b> Это честный диагностический результат (так устроена проверка): пересмотрите силу приёмов, пороги или профиль аудитории — движок показывает, где именно π* проигрывает.</p>
+    <p><b>Где хранятся данные?</b> Локально в браузере (localStorage) + экспорт/импорт JSON в шапке. При смене устройства используйте экспорт.</p>
+    <p><b>Симуляция тормозит интерфейс?</b> Она идёт в фоновом Web Worker (индикатор прогресса в разделе 6); при запрете воркеров — синхронный запасной режим.</p>
+  </div>
+
+  <div class="card" id="glossaryCard">
+    <h3>Словарь терминов и коэффициентов</h3>
+    <p class="mini">Все понятия модели — понятным языком: за что отвечает и какую роль играет. По всему сайту такие слова подчёркнуты точками — нажмите на них, чтобы получить краткое пояснение здесь же, без перехода.</p>
+    <input type="text" id="glSearch" placeholder="Поиск по словарю…" oninput="renderGlossary(this.value)" style="max-width:320px;margin-bottom:10px">
+    <div id="glossaryBox"></div>
+  </div>
+  <div class="card">
+    <h3>На чём основан сервис</h3>
+    <p class="src">Метод МАРСИ (атомарное разделение и сопоставление информации) · теория марковских процессов принятия решений (Р. Беллман; M. Puterman) · психология влияния Р. Чалдини · модели эмоций Плутчика и PAD (Mehrabian–Russell) · семантический дифференциал Ч. Осгуда · модель поведения B=MAP (B. Fogg) · модели пути покупателя AIDA/AIDMA/AISAS, TOFU–MOFU–BOFU, 5A Ф. Котлера · «путь потребительского решения» McKinsey · выставочная деятельность: Э.Б. Гусев и др. · метод анализа иерархий Т. Саати · синтетические респонденты: Park et al. (2023), Brand–Israeli–Ngwe (2023) · «Nudge» Р. Талера и К. Санстейна · ФЗ № 152-ФЗ «О персональных данных».</p>
+  </div>
+</section>
+
+<!-- ===================== 1. ОБЪЕКТ ===================== -->
+<section class="tab" id="tab-object">
+  <h1>1. Объект и цель</h1>
+  <p class="lead">Выберите тип объекта, портрет посетителя и параметры задачи. Под каждый тип объекта уже настроены типовые зоны и их совместимость — потом всё можно поменять под себя.</p>
+  <div class="card"><div id="objForm"></div></div>
+  <div class="card"><h3>Профиль целевой аудитории (θ)</h3><div id="personaInfo"></div></div>
+</section>
+
+<!-- ===================== 2. ДЕКОМПОЗИЦИЯ ===================== -->
+<section class="tab" id="tab-marsi">
+  <h1>2. Зоны и приоритеты</h1>
+  <p class="lead">Опишите объект как набор зон: ответьте на восемь вопросов о каждой — важность, срочность, цена промедления. Движок вычислит вес каждой зоны (W) и выделит корневую зону ★ — с неё выгоднее всего начинать. Всё вводится пошагово, без нейросетей.</p>
+  <div class="card"><div id="marsiCtrl"></div></div>
+  <div class="card"><h3>📏 Где брать числа (ориентиры)</h3>
+    <p class="mini">Не угадывайте — используйте источники. Кнопка 📋 в строке зоны открывает анкету: 7 вопросов с готовыми вариантами, а «Не знаю» честно ставит 0,5 и снижает достоверность зоны.</p>
+    <ul style="padding-left:18px;margin:8px 0 0;font-size:13px;color:var(--ink)">
+      <li><b>Бюджет и прибыль со сделки (G)</b> — ваша бухгалтерия или CRM: средний чек × маржинальность.</li>
+      <li><b>Расположение и поток (m, e)</b> — статистику посетителей дают организаторы выставки. Ориентиры выставочной практики (не строгие данные): главные входы и проходы собирают 60–70% потока, угловые зоны — 20–30%, задние ряды — 10–15%.</li>
+      <li><b>Цена промедления (y)</b> — во что обходится пустующая зона: аренда м² × площадь + упущенные контакты (посетители × конверсия × маржа).</li>
+      <li><b>Факты (f) и достоверность (g)</b> — высокую достоверность ставьте только тому, что мерили сами (счётчик посетителей, статистика касс); ощущениям — низкую.</li>
+      <li><b>После выставки</b> — вернитесь во вкладку 2: отметьте внедрённые микро-методы и замените догадки фактами, веса пересчитаются.</li>
+    </ul></div>
+  <div class="card"><h3>Ячейки и веса</h3><div id="marsiCells"></div></div>
+  <div class="card"><h3>Граф связей и зона валентности</h3><div id="marsiGraph"></div></div>
+  <div class="card"><h3>Итеративный цикл (шаг i → i+1)</h3><div id="marsiIter"></div></div>
+</section>
+
+<!-- ===================== 3. ТАКТИКИ ===================== -->
+<section class="tab" id="tab-tactics">
+  <h1>3. Приёмы и их настройка</h1>
+  <p class="lead">Здесь видно, как каждый приём сдвигает состояние посетителя и сколько стоит применение. Стартовая калибровка — из мета-анализов психологии влияния (Чалдини). Всё можно настроить под свой объект.</p>
+  <div class="card"><div id="tacticsCtrl"></div></div>
+  <div class="card"><h3>Матрица эффектов и стоимости</h3><div id="tacticsTable"></div></div>
+  <div class="card"><h3>Пороги этапов τ(m, j)</h3><div id="thresholdsBox"></div></div>
+</section>
+
+<!-- ===================== 4. РЕШАТЕЛЬ ===================== -->
+<section class="tab" id="tab-solve">
+  <h1>4. Стратегия</h1>
+  <p class="lead">Движок перебирает возможные последовательности приёмов и выбирает ту, что даёт максимум ожидаемой прибыли. Выход: стратегия π*, оценка каждого первого приёма и траектория посетителя с углами φ — насколько шаг ведёт к цели.</p>
+  <div class="card noprint"><h3>Проверка движка</h3>
+    <p class="mini">Проверяет математическое ядро на контрольном примере и внутренние инварианты — всё локально, без внешних сервисов.</p>
+    <button class="btn primary" onclick="autotest()">✓ Самопроверка движка</button>
+    <div id="autotestOut"></div>
+  </div>
+  <div class="card"><div id="solveCtrl"></div><div id="solveOut"></div></div>
+  <div class="card"><h3>Траектория «холод → горячо» с углами φ</h3><div id="funnelChart"></div></div>
+  <div class="card"><h3>Как посетитель проходит этапы</h3><div id="autoChart"></div><div id="autoInfo"></div></div>
+</section>
+
+<!-- ===================== 5. КОМПОЗИЦИЯ ===================== -->
+<section class="tab" id="tab-glue">
+  <h1>5. Композиция зон</h1>
+  <p class="lead">Зоны влияют друг на друга: синергия усиливает набор, конфликт — портит, запрет исключает совместное использование. Компоновщик подбирает лучший набор зон в рамках бюджета.</p>
+  <div class="card"><h3>Матрица Φjk</h3><div id="phiBox"></div></div>
+  <div class="card"><h3>Оптимум композиции</h3><div id="glueOut"></div></div>
+</section>
+
+<!-- ===================== 6. СИМУЛЯЦИЯ ===================== -->
+<section class="tab" id="tab-sim">
+  <h1>6. Проверка на потоке</h1>
+  <p class="lead">Тест стратегии на виртуальном потоке: тысячи синтетических посетителей вашего профиля аудитории — со случайным разбросом реакций, усталостью от повторов и потерей интереса. Стратегия π* сравнивается с тремя обычными подходами к продажам.</p>
+  <div class="card"><div id="simCtrl"></div><div id="simOut"></div></div>
+  <div class="card"><h3>Результаты</h3><div id="simCharts"></div></div>
+  <div class="card"><h3>Чувствительность (H3)</h3><div id="sensOut"></div></div>
+</section>
+
+<!-- ===================== 7. ПРОТОКОЛ ===================== -->
+<section class="tab" id="tab-protocol">
+  <h1>7. Готовый план</h1>
+  <p class="lead noprint">Итоговая «склейка» всех слоёв: приоритеты МАРСИ, оптимальная последовательность тактик, композиция зон, ожидаемые KPI и этический чек-лист. Кнопка «Печать протокола» в шапке формирует PDF-документ.</p>
+  <div class="proto" id="protoOut"></div>
+</section>
+
+
+<!-- ===================== ТАРИФЫ ===================== -->
+<section class="tab" id="tab-pricing">
+  <h1>Тарифы</h1>
+  <p class="lead">Бесплатно — чтобы познакомиться; платно — когда инструмент начинает зарабатывать вам. Оплата через Robokassa: банковские карты, СБП, Pay-методы. Продавец — самозанятый: чек по 422-ФЗ приходит на e-mail автоматически.</p>
+  <div id="myPlanBox"></div>
+  <div class="grid g3" id="pricingCards"></div>
+  <div class="card">
+    <h3>Активация доступа</h3>
+    <p class="mini">После оплаты вы получаете код активации на e-mail. Введите его ниже — активация офлайн, код хранится только в вашем браузере, никаких данных никуда не отправляется.</p>
+    <div class="grid g2">
+      <div><input type="text" id="actCode" placeholder="MBP-XXXX-XXXX" style="max-width:280px;text-transform:uppercase"></div>
+      <div style="align-self:end"><button class="btn primary" onclick="doActivate()">Активировать</button></div>
+    </div>
+    <div id="actOut"></div>
+  </div>
+  <div class="card">
+    <h3>Оплата и возвраты</h3>
+    <p class="mini">Платежи принимает платёжный сервис Robokassa. Продавец — самозанятый: на каждую оплату автоматически формируется чек по 422-ФЗ (сервис «Робочеки СМЗ»), налог на профессиональный доход уплачивается автоматически. Способы оплаты: банковские карты, СБП, Pay-методы. Подписка не продлевается сама: перед окончанием срока напомним заранее. Возвраты и условия — вкладка «Документы».</p>
+  </div>
+</section>
+
+<!-- ===================== ДОКУМЕНТЫ ===================== -->
+<section class="tab" id="tab-legal">
+  <h1>Документы</h1>
+  <p class="lead">Шаблоны публичных документов для приёма платежей. Продавец — самозанятый (плательщик налога на профессиональный доход). Плейсхолдеры в [квадратных скобках] заполняет владелец сервиса; перед запуском рекомендуется проверка юристом.</p>
+  <div class="card">
+    <h3>Публичная оферта (шаблон)</h3>
+    <p class="mini">1. Общие положения. Настоящая оферта определяет условия использования сервиса MarsiBisPlan ([домен]), принадлежащего [ФИО самозанятого, ИНН], зарегистрированному в качестве плательщика налога на профессиональный доход (самозанятого) («Исполнитель»). 2. Предмет. Исполнитель предоставляет доступ к онлайн-инструменту планирования коммерческих пространств по тарифам, опубликованным во вкладке «Тарифы»: Free (бесплатно), «Готовый план» (990 ₽ / 30 дней), Pro (690 ₽/мес или 5 900 ₽/год), Business (4 900 ₽/мес или 39 900 ₽/год). 3. Акцепт. Оплата тарифа означает полное согласие с офертой. 4. Предоставление доступа. Код активации направляется на e-mail покупателя в течение [24 часов] после оплаты. Срок доступа: 30 дней (месячные тарифы и «Готовый план») или 365 дней (годовые тарифы). 5. Чеки. На каждую оплату формируется чек в соответствии с 422-ФЗ (налог на профессиональный доход); чек направляется покупателю автоматически сервисом «Робочеки СМЗ» платёжной системы Robokassa. 6. Возвраты. Поскольку доступ к цифровому сервису предоставляется сразу, возврат возможен в течение 14 дней, если код активации не использован (ст. 32 Закона о защите прав потребителей). Заявки: [e-mail поддержки]. 7. Технические требования: браузер с включённым JavaScript; данные конфигураций хранятся локально в браузере пользователя. 8. Ответственность ограничена суммой оплаты. Реквизиты: [ФИО, ИНН, статус самозанятого, адрес, телефон].</p>
+  </div>
+  <div class="card">
+    <h3>Политика обработки персональных данных (шаблон)</h3>
+    <p class="mini">Оператор [ФИО самозанятого, ИНН] обрабатывает персональные данные (e-mail, имя — при обращении) в целях исполнения договора, формирования чеков и поддержки, на основании ст. 6 152-ФЗ. Данные не передаются третьим лицам, кроме платёжного сервиса Robokassa (обработка платежа и формирование чека по 422-ФЗ). Срок хранения — 3 года после последнего взаимодействия. Согласие отзывается письмом на [e-mail]. Оператор подал уведомление об обработке ПДн в Роскомнадзор [дата]. Cookie используются только для технической работы сервиса; аналитика подключается с обезличиванием IP.</p>
+  </div>
+  <div class="card">
+    <h3>Правила возврата</h3>
+    <p class="mini">Возврат производится на карту/счёт плательщика через Robokassa в течение [10 банковских] дней с подачи заявки. Основания: код не активирован — полный возврат в течение 14 дней; техническая невозможность использования сервиса по вине Исполнителя — пропорциональный возврат. При возврате формируется корректирующий чек в приложении «Мой налог» автоматически. Сервис работает локально в браузере; проверяйте совместимость на бесплатном тарифе до покупки.</p>
+  </div>
+  <div class="card">
+    <h3>Контакты и реквизиты</h3>
+    <p class="mini">[ФИО самозанятого, ИНН, статус плательщика НПД (самозанятый), адрес, e-mail поддержки, телефон]. Вопросы по платежам: [e-mail]. Чеки направляются автоматически на e-mail, указанный при оплате.</p>
+  </div>
+</section>
+
+</main>
+<div id="mQuiz" onclick="if(event.target===this)quizClose()"></div>
+<script>
+"use strict";
+/* ============================== УТИЛИТЫ ============================== */
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const sigmoid=z=>1/(1+Math.exp(-z));
+const fmt=(v,d=2)=>(v==null||isNaN(v))?"—":Number(v).toLocaleString("ru-RU",{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtP=(v,d=1)=>fmt(v*100,d)+"%";
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(rng){let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+const mean=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
+function bootstrapCI(vals,rng,B=1000){const m=mean(vals);const res=[];for(let b=0;b<B;b++){let s=0;for(let i=0;i<vals.length;i++)s+=vals[(rng()*vals.length)|0];res.push(s/vals.length)}res.sort((a,b)=>a-b);return{lo:res[Math.floor(B*.025)],hi:res[Math.floor(B*.975)],m}}
+
+/* ============================== ДАННЫЕ: ПАРАМЕТРЫ ВОРОНКИ ============================== */
+const PARAMS=[
+ {id:"trust",name:"Доверие (шкала доверия)",grp:"product",def:true,crit:true},
+ {id:"interest",name:"Интерес",grp:"product",def:true},
+ {id:"need",name:"Потребность",grp:"product",def:true},
+ {id:"motivation",name:"Мотивация",grp:"product",def:true},
+ {id:"social",name:"Социальное влияние",grp:"product",def:true},
+ {id:"emotion",name:"Эмоциональное состояние",grp:"product",def:true},
+ {id:"attention",name:"Внимание",grp:"product"},
+ {id:"action",name:"Готовность к действию",grp:"product"},
+ {id:"memory",name:"Память об источнике",grp:"product"},
+ {id:"fbck",name:"Качество отзыва",grp:"product"},
+ {id:"cogn",name:"Когнитивные искажения",grp:"product"},
+ {id:"beliefs",name:"Убеждения и ценности",grp:"product"},
+ {id:"channels",name:"Связь каналов",grp:"product"},
+ {id:"fear",name:"Страх",grp:"buyer"},{id:"anx",name:"Тревога",grp:"buyer"},{id:"belong",name:"Принадлежность",grp:"buyer"},
+ {id:"recogn",name:"Признание",grp:"buyer"},{id:"joy",name:"Радость",grp:"buyer"},{id:"pleasure",name:"Удовольствие",grp:"buyer"},
+ {id:"hope",name:"Надежда",grp:"buyer"},{id:"nost",name:"Ностальгия",grp:"buyer"},{id:"guilt",name:"Вина",grp:"buyer"},
+ {id:"empathy",name:"Эмпатия",grp:"buyer"},{id:"recip",name:"Жажда взаимности",grp:"buyer"},{id:"curio",name:"Любопытство",grp:"buyer"},
+ {id:"intrigue",name:"Интрига",grp:"buyer"},{id:"lazy",name:"Стремление к экономии усилий",grp:"buyer"},{id:"auth",name:"Восприятие авторитетности",grp:"buyer"},
+ {id:"foe",name:"Восприятие «свой–чужой»",grp:"buyer"},{id:"contra",name:"Противопоставление",grp:"buyer"},{id:"consist",name:"Стремление к последовательности",grp:"buyer"}
+];
+const PNAME=id=>{const p=PARAMS.find(p=>p.id===id);return p?p.name:id};
+
+/* ============================== ДАННЫЕ: ТАКТИКИ (стартовая калибровка — мета-анализы Чалдини и контрольный пример) ============================== */
+const TACTICS=[
+ {id:"demo",name:"Живая демонстрация",grp:"Выставочные",cost:2.0,stages:["TOFU","MOFU"],eff:{interest:.25,trust:.10,attention:.20},ch:"—",desc:"Продукт в действии, мастер-классы, тестирование в реальном времени"},
+ {id:"closed",name:"Закрытая зона",grp:"Выставочные",cost:1.8,stages:["MOFU","BOFU"],eff:{trust:.25,social:.10,interest:-.05},ch:"Эксклюзивность/статус",desc:"Ограничение доступа к экспонатам и переговорам для общего потока"},
+ {id:"interview",name:"Квалифицированное интервью",grp:"Выставочные",cost:1.5,stages:["MOFU","BOFU"],eff:{interest:.05,trust:.30,need:.10},ch:"BANT/MEDDIC",desc:"Отсечение случайных посетителей за 1–3 минуты, выявление бюджета и потребности"},
+ {id:"guerrilla",name:"Партизанский маркетинг",grp:"Выставочные",cost:0.8,stages:["TOFU"],eff:{interest:.20,emotion:.25,trust:-.05},ch:"Эмоции/креатив",desc:"Малобюджетные нестандартные приёмы, ставка на психологическое воздействие"},
+ {id:"scarcity",name:"Дефицит и срочность",grp:"Общие",cost:0.5,stages:["TOFU","BOFU"],eff:{interest:.30,trust:-.15},ch:"Дефицит r=0,18–0,28",desc:"Ограничение количества/времени предложения против прокрастинации"},
+ {id:"emotional",name:"Эмоциональное воздействие",grp:"Общие",cost:1.0,stages:["TOFU","MOFU"],eff:{emotion:.30,motivation:.10,trust:-.05},ch:"Плутчик/PAD",desc:"Вызов целевых эмоций: решения принимаются интуитивно, затем рационализируются"},
+ {id:"upsell",name:"Алгоритмический апсейл",grp:"Общие",cost:1.2,stages:["BOFU"],eff:{motivation:.25,need:.10},ch:"—",longterm:true,desc:"Предложение более дорогой альтернативы на основе данных (долгосрок)"},
+ {id:"lossleader",name:"Лосс-лидер",grp:"Общие",cost:3.0,stages:["TOFU","MOFU"],eff:{need:.30,interest:.15,trust:.10},ch:"Взаимность r=0,16–0,24",longterm:true,desc:"Популярный товар ниже себестоимости ради потока и маржинальных допродаж"},
+ {id:"ret_demo",name:"Возвратная: повторная демонстрация",grp:"Возвратные",cost:0.6,stages:["TOFU","MOFU","BOFU"],eff:{interest:.15,motivation:.10},ch:"—",ret:true,desc:"Возврат на путь при потере весов параметров"},
+ {id:"ret_obj",name:"Возвратная: работа с возражениями",grp:"Возвратные",cost:0.9,stages:["TOFU","MOFU","BOFU"],eff:{trust:.20,motivation:.10},ch:"—",ret:true,desc:"Снятие сомнений при потере порогов предыдущего этапа"}
+];
+const TNAME=id=>{const t=TACTICS.find(t=>t.id===id);return t?t.name:id};
+
+/* ============================== ДАННЫЕ: ПРОФИЛИ ЦА (персоны) ============================== */
+const PERSONAS={
+ b2b_dir:{name:"Директор по закупкам (B2B, 45+)",desc:"Решает по доверию и цифрам, чувствителен к статусу и закрытым переговорам, устойчив к дефициту.",
+  w:{trust:.40,interest:.10,need:.25,motivation:.05,social:.05,emotion:.05,action:.10},
+  x0:{trust:.10,interest:0,need:.20,motivation:0,social:0,emotion:0,attention:.10},
+  critical:["trust","need"],sigma:.06,
+  mult:{interview:1.2,closed:1.3,scarcity:.6,demo:.9,upsell:1.1,guerrilla:.7,emotional:.8,lossleader:1.0,ret_demo:.9,ret_obj:1.1}},
+ b2b_tech:{name:"Инженер / специалист (B2B, 30–45)",desc:"Вникает в демонстрацию, скептичен к давлению, ценит факты.",
+  w:{trust:.35,interest:.25,need:.20,motivation:.05,social:.05,emotion:.05,action:.05},
+  x0:{trust:.05,interest:.20,need:.10,motivation:0,social:0,emotion:0,attention:.20},
+  critical:["trust"],sigma:.07,
+  mult:{demo:1.3,interview:1.1,scarcity:.5,guerrilla:.8,emotional:.7,closed:.9,lossleader:1.0,upsell:1.0,ret_demo:1.1,ret_obj:1.0}},
+ msb:{name:"Предприниматель МСБ (B2B/B2C, 30–40)",desc:"Считает деньги и выгоду, реагирует на выгодные условия и дефицит.",
+  w:{trust:.25,interest:.20,need:.25,motivation:.10,social:.10,emotion:.10},
+  x0:{trust:0,interest:.10,need:.15,motivation:0,social:.05,emotion:.05,attention:.10},
+  critical:["trust","need"],sigma:.09,
+  mult:{lossleader:1.3,scarcity:1.0,demo:1.1,interview:1.0,closed:.9,guerrilla:1.0,emotional:.9,upsell:1.1,ret_demo:1.0,ret_obj:1.0}},
+ young:{name:"Молодая аудитория (B2C, 18–30)",desc:"Эмоции, вовлечение, соцдоказательство; иммунитет к агрессивной рекламе.",
+  w:{trust:.20,interest:.25,need:.10,motivation:.10,social:.20,emotion:.15},
+  x0:{trust:0,interest:.20,need:0,motivation:.05,social:.10,emotion:.10,attention:.15},
+  critical:["trust"],sigma:.12,
+  mult:{guerrilla:1.4,emotional:1.3,scarcity:1.1,demo:1.1,closed:.7,interview:.8,lossleader:1.1,upsell:1.0,ret_demo:1.0,ret_obj:.9}},
+ family:{name:"Семейная пара (B2C, 30–45)",desc:"Осторожные, практичные; важны демонстрация и безопасные выгодные предложения.",
+  w:{trust:.30,interest:.15,need:.20,motivation:.10,social:.15,emotion:.10},
+  x0:{trust:.05,interest:.05,need:.10,motivation:0,social:.05,emotion:.05,attention:.10},
+  critical:["trust"],sigma:.09,
+  mult:{demo:1.2,lossleader:1.2,emotional:1.0,guerrilla:.8,scarcity:.9,closed:.8,interview:.9,upsell:.9,ret_demo:1.1,ret_obj:1.0}},
+ premium:{name:"Премиум-клиент (B2C, 40+)",desc:"Статус, приватность, эксклюзив; отторгает массовые приёмы.",
+  w:{trust:.40,interest:.10,need:.10,motivation:.05,social:.15,emotion:.10,action:.10},
+  x0:{trust:.05,interest:0,need:.10,motivation:0,social:.10,emotion:0,attention:.05},
+  critical:["trust","social"],sigma:.08,
+  mult:{closed:1.4,upsell:1.2,scarcity:.5,guerrilla:.6,emotional:.8,demo:1.0,interview:1.1,lossleader:.8,ret_demo:.9,ret_obj:1.1}},
+ skeptic:{name:"Скептик / исследователь",desc:"Проверяет факты, ненавидит манипуляции и таймеры; доверие зарабатывается фактами.",
+  w:{trust:.45,interest:.20,need:.15,motivation:.05,social:.05,emotion:.05,action:.05},
+  x0:{trust:-.10,interest:.15,need:.10,motivation:0,social:0,emotion:-.05,attention:.10},
+  critical:["trust"],sigma:.10,
+  mult:{interview:1.2,demo:1.1,scarcity:.4,emotional:.7,guerrilla:.8,closed:.9,lossleader:1.0,upsell:.8,ret_demo:1.0,ret_obj:1.2}}
+};
+
+/* ============================== ДАННЫЕ: АДАПТЕРЫ МАРСИ (доменные словари) ============================== */
+const ADAPTERS={
+ stand:{name:"Выставочный стенд",aspects:["Привлечение","Вовлечение/демонстрация","Квалификация и переговоры","Сделка","Комфорт и навигация","Пост-обработка"],
+  cells:[
+   {n:"Входовая промо-зона",a:"Привлечение",cost:8,sup:["guerrilla","emotional"],p:[.6,.7,.6,.7,.5,.6,.7,.7],links:["demo_zone"]},
+   {n:"Зона живой демонстрации",a:"Вовлечение/демонстрация",cost:20,sup:["demo","emotional"],p:[.7,.8,.7,.9,.8,.7,.9,.5],links:["negot"]},
+   {n:"Закрытая переговорная",a:"Квалификация и переговоры",cost:25,sup:["closed","interview","upsell"],p:[.6,.8,.7,.8,.9,.6,.9,.4],links:[]},
+   {n:"Касса / зона транзакции",a:"Сделка",cost:10,sup:["scarcity","upsell"],p:[.7,.6,.6,.8,.8,.7,.7,.6],links:[]},
+   {n:"Навигация и указатели",a:"Комфорт и навигация",cost:5,sup:[],p:[.5,.8,.8,.6,.6,.8,.5,.9],links:[]},
+   {n:"Раздатка / лид-магнит",a:"Пост-обработка",cost:6,sup:["lossleader","interview"],p:[.6,.6,.7,.7,.6,.7,.7,.8],links:[]}
+  ],
+  phi:{"entry_zone|demo_zone":.6,"demo_zone|negot":.4,"cash|negot":-.4,"entry_zone|negot":-.3,"nav_zone|demo_zone":.2,"rest|negot":.5,"leadmag|negot":.3,"leadmag|cash":.2}},
+ retail:{name:"Торговое помещение (ритейл)",aspects:["Привлечение","Вовлечение","Консультация","Сделка","Комфорт и навигация"],
+  cells:[
+   {n:"Витрина",a:"Привлечение",cost:15,sup:["guerrilla","emotional","scarcity"],p:[.6,.8,.6,.8,.7,.6,.8,.6],links:["demo_zone"]},
+   {n:"Зона демонстрации/тестирования",a:"Вовлечение",cost:20,sup:["demo","emotional"],p:[.6,.7,.7,.8,.7,.7,.8,.5],links:["consult"]},
+   {n:"Стол консультации",a:"Консультация",cost:12,sup:["interview","closed"],p:[.5,.6,.7,.8,.8,.7,.8,.7],links:[]},
+   {n:"Прикассовая зона",a:"Сделка",cost:10,sup:["scarcity","upsell","lossleader"],p:[.7,.6,.6,.8,.7,.7,.7,.7],links:[]},
+   {n:"Навигация по залу",a:"Комфорт и навигация",cost:5,sup:[],p:[.5,.8,.8,.6,.5,.8,.5,.9],links:[]},
+   {n:"Зона ожидания",a:"Комфорт и навигация",cost:7,sup:[],p:[.4,.7,.6,.6,.5,.7,.6,.8],links:[]}
+  ],
+  phi:{"shop_win|demo_zone":.5,"demo_zone|consult":.4,"cash|consult":-.3,"shop_win|cash":.3,"nav_zone|demo_zone":.2,"rest|consult":.4,"rest|cash":.2}},
+ service:{name:"Бизнес-помещение (услуги)",aspects:["Приветствие","Ожидание","Консультация","Демонстрация услуг","Навигация"],
+  cells:[
+   {n:"Ресепшен",a:"Приветствие",cost:10,sup:["interview","emotional"],p:[.7,.7,.7,.8,.7,.7,.7,.7],links:["wait"]},
+   {n:"Зона ожидания",a:"Ожидание",cost:8,sup:["lossleader"],p:[.5,.7,.6,.7,.6,.7,.6,.8],links:["cabinet"]},
+   {n:"Кабинеты / переговорные",a:"Консультация",cost:20,sup:["closed","interview","upsell"],p:[.6,.8,.7,.9,.9,.7,.9,.4],links:[]},
+   {n:"Демонстрация услуг / портфолио",a:"Демонстрация услуг",cost:12,sup:["demo","emotional"],p:[.5,.7,.7,.8,.7,.7,.8,.6],links:[]},
+   {n:"Навигация",a:"Навигация",cost:4,sup:[],p:[.5,.8,.8,.6,.5,.8,.5,.9],links:[]}
+  ],
+  phi:{"recep|wait":.5,"wait|cabinet":.5,"demo_srv|cabinet":.4,"demo_srv|recep":.3,"nav_srv|cabinet":.2,"wait|cash":0}},
+ composition:{name:"Коммерческая композиция (витрина/зона)",aspects:["Акцент","Поддержка","Информация","Взаимодействие"],
+  cells:[
+   {n:"Центральный акцент (hero)",a:"Акцент",cost:15,sup:["emotional","guerrilla"],p:[.7,.8,.6,.9,.8,.7,.9,.5],links:["support"]},
+   {n:"Поддерживающие элементы",a:"Поддержка",cost:10,sup:["demo"],p:[.5,.7,.7,.7,.6,.7,.7,.7],links:[]},
+   {n:"Ценники / инфо-модули",a:"Информация",cost:5,sup:["scarcity","lossleader"],p:[.6,.6,.8,.7,.6,.8,.6,.8],links:[]},
+   {n:"Точка взаимодействия (тест/приманка)",a:"Взаимодействие",cost:12,sup:["demo","interview"],p:[.6,.7,.7,.8,.7,.7,.8,.5],links:[]}
+  ],
+  phi:{"hero|support":.6,"hero|interact":.4,"interact|price":.4,"support|price":.3,"hero|price":.2}}
+};
+
+/* ============================== СОСТОЯНИЕ ============================== */
+const DEFAULT_STATE=()=>({
+ version:1,
+ adapter:"stand",persona:"b2b_dir",goal:"Максимум сделок на выставке",
+ budget:60,G:20,gamma:.9,Tmax:6,beta:1,k0:4,tau0:2,dealMode:"each",stages:true,
+ activeParams:["trust","interest","need","motivation","social","emotion"],
+ weights:null,x0:null, // берутся из персоны, переопределяются вручную
+ tactics:null, // {effects:{tid:{pid:val}}, costs:{tid:val}, stages:{tid:[...]}, on:{tid:bool}}
+ thresholds:{MOFU:{interest:.40},BOFU:{trust:.50,need:.30}},
+ cells:null,phi:null,cellLinks:null,
+ marsi:{k:9,eps:.05,norm:.35,maxIter:8,iter:0,log:[]},
+ sim:{n:10000,seed:12345,sigS:1,cS:1,last:null},
+ solveLast:null,
+ lic:{code:null,plan:"free",until:null},
+ projects:[],
+ usedCodes:[],
+ goalParsed:null,
+ ethics:{}
+});
+let S=DEFAULT_STATE();
+function save(){try{localStorage.setItem("marsibisplan_v1",JSON.stringify(S));$("saveStatus").textContent="сохранено "+new Date().toLocaleTimeString("ru-RU")}catch(e){$("saveStatus").textContent=""}}
+function load(){try{const j=localStorage.getItem("marsibisplan_v1")||localStorage.getItem("marsi_voronka_v1");if(j){const s=JSON.parse(j);if(s&&s.version===1)S=Object.assign(DEFAULT_STATE(),s)}}catch(e){}}
+function resetAll(){if(!confirm("Сбросить все данные и вернуться к настройкам по умолчанию? Активированная лицензия сохранится."))return;const keep={lic:S.lic,usedCodes:S.usedCodes};localStorage.removeItem("marsibisplan_v1");localStorage.removeItem("marsi_voronka_v1");S=DEFAULT_STATE();S.lic=keep.lic;S.usedCodes=keep.usedCodes;initData();renderAll();renderPricing();renderProjects();switchTab("tab-object")}
+
+/* Инициализация данных из справочников (один раз или после сброса) */
+function initData(){
+ if(!S.tactics){const fx={},cs={},st={},on={};for(const t of TACTICS){fx[t.id]=Object.assign({},t.eff);cs[t.id]=t.cost;st[t.id]=t.stages.slice();on[t.id]=true}S.tactics={effects:fx,costs:cs,stages:st,on}}
+ if(!S.cells){const ad=ADAPTERS[S.adapter];const ids={"Входовая промо-зона":"entry_zone","Зона живой демонстрации":"demo_zone","Закрытая переговорная":"negot","Касса / зона транзакции":"cash","Навигация и указатели":"nav_zone","Раздатка / лид-магнит":"leadmag","Витрина":"shop_win","Зона демонстрации/тестирования":"demo_zone","Стол консультации":"consult","Прикассовая зона":"cash","Навигация по залу":"nav_zone","Зона ожидания":"rest","Ресепшен":"recep","Кабинеты / переговорные":"cabinet","Демонстрация услуг / портфолио":"demo_srv","Навигация":"nav_srv","Центральный акцент (hero)":"hero","Поддерживающие элементы":"support","Ценники / инфо-модули":"price","Точка взаимодействия (тест/приманка)":"interact"};
+  let i=0;S.cells=ad.cells.map(c=>({id:ids[c.n]||("c"+(++i)),name:c.n,aspect:c.a,cost:c.cost,sup:c.sup,t:c.p[0],m:c.p[1],f:c.p[2],e:c.p[3],y:c.p[4],g:c.p[5],h:c.p[6],r:c.p[7],done:false}));
+  // связи: предзаполненные links адаптера переводим в id
+  const nameToId={};S.cells.forEach(c=>nameToId[c.name]=c.id);
+  const linkNames={"entry_zone":"Входовая промо-зона","demo_zone":"Зона живой демонстрации","negot":"Закрытая переговорная","cash":"Касса / зона транзакции","nav_zone":"Навигация и указатели","leadmag":"Раздатка / лид-магнит","shop_win":"Витрина","consult":"Стол консультации","rest":"Зона ожидания","recep":"Ресепшен","wait":"Зона ожидания","cabinet":"Кабинеты / переговорные","demo_srv":"Демонстрация услуг / портфолио","nav_srv":"Навигация","hero":"Центральный акцент (hero)","support":"Поддерживающие элементы","price":"Ценники / инфо-модули","interact":"Точка взаимодействия (тест/приманка)"};
+  S.cellLinks={};
+  for(const c of ad.cells){const cid=nameToId[c.n];if(!cid)continue;S.cellLinks[cid]=(c.links||[]).map(l=>nameToId[linkNames[l]]||l).filter(x=>S.cells.some(cc=>cc.id===x))}
+ }
+ if(!S.phi){const raw=ADAPTERS[S.adapter].phi;S.phi={};for(const k in raw){const[a,b]=k.split("|");S.phi[phiKey(a,b)]=raw[k]}}
+ if(!S.weights){const p=PERSONAS[S.persona];S.weights=Object.assign({},p.w);S.x0=Object.assign({},p.x0)}
+}
+
+/* ============================== ЯДРО МАРСИ ============================== */
+function marsiNorm(v,k=S.marsi.k){v=clamp(v,0,1);return Math.log(1+k*v)/Math.log(1+k)}
+const MPARAMS=[["t","время (срочность)",.8],["m","контекст пространства",.7],["f","факты реальности",.7],["e","сознательная цель",.9],["y","критичность ущерба",1.0],["g","достоверность данных",.8],["h","ценность решения / ROI",1.0]];
+/* Анкета зоны (пошаговое анкетирование по МАРСИ) + шкалы-подсказки */
+const M_QUESTIONS={
+ t:{q:"Насколько срочно заниматься этой зоной?",a:["не горит — можно отложить на квартал","заметно, но не критично","нужно успеть к ближайшей выставке"]},
+ m:{q:"Насколько зона завязана на физическое расположение?",a:["можно перенести куда угодно без потери смысла","часть смысла теряется при переносе","вся ценность — в месте: вход, центр зала, соседство"]},
+ f:{q:"Насколько данные о зоне подтверждены фактами?",a:["только ощущения команды","есть часть замеров","есть замеры и статистика"]},
+ e:{q:"Ведёт ли доработка зоны к вашей цели?",a:["почти не влияет","поддерживает основную цель","прямо создаёт сделки / лиды / охват"]},
+ y:{q:"Что теряете, если не заняться зоной?",a:["почти ничего","заметную часть эффекта","каждая выставка в этом месте — впустую"]},
+ h:{q:"Сколько пользы принесёт доработка относительно затрат?",a:["мелкое улучшение","заметный выигрыш","главный рычаг результата"]},
+ r:{q:"Хватит ли ресурсов на доработку (деньги, люди, время)?",a:["нет ни денег, ни рук","сделаем, но придётся чем-то пожертвовать","ресурсов достаточно"]}};
+let MQ=null;
+function openQuiz(id){const c=S.cells.find(x=>x.id===id);if(!c)return;MQ={id,i:0,ans:{},unk:0};renderQuiz()}
+function renderQuiz(){
+ const c=S.cells.find(x=>x.id===MQ.id);const keys=Object.keys(M_QUESTIONS);const k=keys[MQ.i];const Q=M_QUESTIONS[k];
+ const box=$("mQuiz");
+ box.innerHTML=`<div class="box"><div class="mini">${esc(c.name)} · вопрос ${MQ.i+1} из ${keys.length}${MQ.unk?` · «не знаю»: ${MQ.unk}`:""}</div>
+ <h3 style="margin:8px 0 4px">${Q.q}</h3>
+ <div class="mq-anchors"><span>0 — ${Q.a[0]}</span><span>1 — ${Q.a[2]}</span></div>
+ <div class="mq-stops">${[0,.25,.5,.75,1].map(v=>`<div class="mq-stop" onclick="quizAnswer(${v})">${String(v).replace(".",",")}</div>`).join("")}</div>
+ <div class="mini" style="text-align:center;margin-bottom:10px">0,5 — ${Q.a[1]}</div>
+ <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="quizUnknown()">Не знаю</button><button class="btn ghost" onclick="quizClose()">Отмена</button></div></div>`;
+ box.style.display="flex"}
+function quizAnswer(v){const keys=Object.keys(M_QUESTIONS);MQ.ans[keys[MQ.i]]=v;MQ.i++;if(MQ.i>=keys.length)quizFinish();else renderQuiz()}
+function quizUnknown(){const keys=Object.keys(M_QUESTIONS);MQ.ans[keys[MQ.i]]=.5;MQ.unk++;MQ.i++;if(MQ.i>=keys.length)quizFinish();else renderQuiz()}
+function quizFinish(){
+ const c=S.cells.find(x=>x.id===MQ.id);
+ for(const k in MQ.ans)c[k]=MQ.ans[k];
+ c.g=clamp(c.g-.15*MQ.unk,0,1);
+ const unkn=MQ.unk;const nm=c.name;const gg=c.g;
+ quizClose();save();renderMarsi();
+ alert(`Анкета зоны «${nm}» завершена.${unkn?` «Не знаю» ×${unkn}: поставлено 0,5, достоверность снижена до ${fmt(gg,2)} — вес зоны честно просядет.`:" Достоверность не снижалась."}`)}
+function quizClose(){MQ=null;const b=$("mQuiz");if(b)b.style.display="none"}
+function cellW(c){let s=0,ws=0;for(const[k,,wk]of MPARAMS){s+=wk*marsiNorm(clamp(c[k]??.5,0,1));ws+=wk}return(s/ws)*clamp(c.r??.5,0,1)*(1-S.marsi.eps)}
+function marsiCompute(){const W={};S.cells.forEach(c=>W[c.id]=cellW(c));const impact={};for(const c of S.cells){let im=W[c.id];for(const l of(S.cellLinks[c.id]||[])){const lc=S.cells.find(x=>x.id===l);if(lc)im+=.5*W[lc.id]}impact[c.id]=im}
+ let root=null;for(const c of S.cells){if(root===null||impact[c.id]>impact[root.id])root=c}
+ return{W,impact,root}}
+function marsiStep(cellId,method,fb){const c=S.cells.find(x=>x.id===cellId);if(!c)return;c.y=clamp(c.y-.3,0,1);c.g=clamp(c.g+.1*fb,0,1);(S.cellLinks[cellId]||[]).forEach(l=>{const lc=S.cells.find(x=>x.id===l);if(lc)lc.g=clamp(lc.g+.05*fb,0,1)});S.marsi.iter++;S.marsi.log.push({i:S.marsi.iter,cell:c.name,method,fb});save()}
+
+/* ============================== ЯДРО MDP (поиск оптимальной стратегии) ============================== */
+function normWeights(){const w={};let s=0;for(const p of S.activeParams){w[p]=S.weights[p]??0;s+=w[p]}if(s<=0){for(const p of S.activeParams)w[p]=1/S.activeParams.length;return w}for(const p of S.activeParams)w[p]=w[p]/s;return w}
+function availTactics(stage,stagesOn){const st=typeof stage==="number"?["TOFU","MOFU","BOFU"][stage]:stage;const out=[];for(const t of TACTICS){if(!S.tactics.on[t.id])continue;if(stagesOn&&!S.tactics.stages[t.id].includes(st))continue;out.push(t.id)}return out}
+function tacticEff(tid){const base=S.tactics.effects[tid];const per=PERSONAS[S.persona]||{};const mult=(per.mult&&per.mult[tid]!=null)?per.mult[tid]:1;const out={};for(const p in base){if(S.activeParams.includes(p))out[p]=base[p]*mult}return out}
+function pBuy(x,w){let s=0;for(const p in w)s+=w[p]*(x[p]??0);return sigmoid(S.k0*s-S.tau0)}
+function stageOf(x){if(!S.stages)return 0;let st=0;const thM=S.thresholds.MOFU||{},thB=S.thresholds.BOFU||{};
+ let okM=true;for(const p in thM)if((x[p]??0)<thM[p])okM=false;if(okM)st=1;
+ if(st===1){let okB=true;for(const p in thB)if((x[p]??0)<thB[p])okB=false;if(okB)st=2}return st}
+function criticalHit(x){const per=PERSONAS[S.persona];if(!per)return null;for(const c of per.critical||[]){if(S.activeParams.includes(c)&&(x[c]??0)<=-.999)return c}return null}
+/* Обратный ход ДП: memo по (округлённое состояние, этап, глубина) */
+function solveMDP(){
+ const w=normWeights(),per=PERSONAS[S.persona],memo=new Map(),T=S.Tmax;
+ const x0={};for(const p of S.activeParams)x0[p]=S.x0[p]??0;
+ const rkey=(x,m,d)=>S.activeParams.map(p=>Math.round((x[p]??0)*10)).join(",")+"|"+m+"|"+d;
+ const stagesOn=S.stages;
+ function rec(x,m,d){
+  if(d>=T)return{V:0,a:null,nx:null};
+  const k=rkey(x,m,d);if(memo.has(k))return memo.get(k);
+  let best=null,second=null;const arr=[];
+  for(const tid of availTactics(m,stagesOn)){
+   const eff=tacticEff(tid,per);const nx={};for(const p of S.activeParams)nx[p]=clamp((x[p]??0)+(eff[p]??0),-1,1);
+   let q=-S.tactics.costs[tid],nm=m,deal=0;
+   const crit=criticalHit(nx);
+   if(!crit){
+    nm=stagesOn?Math.min(m+1,stageOf(nx)):m;
+    if(stagesOn&&nm>m)q+=S.beta;
+    const p=pBuy(nx,w);
+    if(S.dealMode==="each"&&(nm===2||!stagesOn)){q+=S.G*p+ S.gamma*(1-p)*rec(nx,nm,d+1).V}
+    else if(S.dealMode==="last"&&d===T-1){q+=S.G*p+ S.gamma*rec(nx,nm,d+1).V}
+    else{q+=S.gamma*rec(nx,nm,d+1).V}
+   }
+   if(!best||q>best.q){second=best;best={q,a:tid,nx,nm,crit}}else if(!second||q>second.q)second={q,a:tid,nx,nm,crit};
+   arr.push({q,a:tid,nx,nm,crit});
+  }
+  arr.sort((x1,x2)=>x2.q-x1.q);
+  const res={V:best?best.q:0,best,second,rank:arr.map(c=>c.a),cands:arr};
+  memo.set(k,res);return res;
+ }
+ // оптимальная траектория от s0 (правило «без повторов» — выгорание триггеров)
+ const path=[];let x=x0,m=0,d=0;const wD=stageDir();const usedSet=new Set();
+ while(d<T){
+  const r=rec(x,m,d);if(!r.best)break;
+  const av=availTactics(m,stagesOn);
+  const chosen=(r.rank||[]).find(a=>!usedSet.has(a)&&av.includes(a))||null;
+  if(!chosen)break;
+  usedSet.add(chosen);
+  const eff=tacticEff(chosen,per);const nx={};for(const p of S.activeParams)nx[p]=clamp((x[p]??0)+(eff[p]??0),-1,1);
+  const prev=Object.assign({},x);
+  const crit=criticalHit(nx);
+  const nm=crit?m:(stagesOn?Math.min(m+1,stageOf(nx)):m);
+  x=nx;m=nm;
+  const ang=angleCos(prev,x,m,wD);
+  let pb=null;
+  if(!crit&&((S.dealMode==="each"&&(nm===2||!stagesOn))||(S.dealMode==="last"&&d===T-1)))pb=pBuy(x,w);
+  const alt=(r.rank||[]).find(a=>a!==chosen&&!usedSet.has(a))||null;
+  path.push({d,a:chosen,x:Object.assign({},x),m,nm,crit,angle:ang,pb,alt});
+  if(crit||((S.dealMode==="each")&&pb!=null&&pb>=.999))break;
+  d++;
+ }
+ // Q первого шага для таблицы
+ const Q1=[];for(const tid of availTactics(0,stagesOn)){
+  const eff=tacticEff(tid,per);const nx={};for(const p of S.activeParams)nx[p]=clamp((x0[p]??0)+(eff[p]??0),-1,1);
+  const kk=rkey(nx,stagesOn?Math.min(0+1,stageOf(nx)):0,1);
+  let q=-S.tactics.costs[tid];const crit=criticalHit(nx);
+  if(!crit){const nm=stagesOn?Math.min(1,stageOf(nx)):0;if(stagesOn&&nm>0)q+=S.beta;const p=pBuy(nx,w);
+   if(S.dealMode==="each"&&(nm===2||!stagesOn))q+=S.G*p+S.gamma*(1-p)*rec(nx,nm,1).V;
+   else if(S.dealMode==="last"&&T-1===0)q+=S.G*p;
+   else q+=S.gamma*rec(nx,nm,1).V;}
+  Q1.push({a:tid,q});
+ }
+ Q1.sort((a,b)=>b.q-a.q);
+ const idx=new Map();
+ for(const [k,res] of memo){if(!res||!res.best)continue;const parts=k.split("|");const mk=parts[1]+"|"+parts[2];if(!idx.has(mk))idx.set(mk,[]);idx.get(mk).push({v:parts[0].split(",").map(Number),rank:res.rank})}
+ return{policy:memo,idx,V0:rec(x0,stagesOn?0:0,0).V,path,Q1,w,x0};
+}
+/* Целевое направление этапа: нормированный вектор весов релевантных параметров, прочие — 0 */
+function stageDir(){const w=normWeights();const dir={TOFU:{},MOFU:{},BOFU:{}};
+ const rel={TOFU:["attention","interest","emotion"],MOFU:["trust","need","social","channels"],BOFU:["motivation","action","trust","interest"]};
+ for(const st of["TOFU","MOFU","BOFU"]){let s=0;for(const p of rel[st])if(w[p])s+=w[p];for(const p of S.activeParams){const on=rel[st].includes(p);dir[st][p]=on&&s>0?(w[p]/s):0}}return dir}
+function angleCos(xPrev,xNext,m,wD){const dir=wD[!S.stages?"BOFU":["TOFU","MOFU","BOFU"][m]]||wD.BOFU;let dot=0,n1=0,n2=0;for(const p of S.activeParams){const dv=(xNext[p]??0)-(xPrev[p]??0);dot+=dv*(dir[p]||0);n1+=dv*dv;n2+=(dir[p]||0)**2}
+ if(n1<1e-12||n2<1e-12)return null;return Math.acos(clamp(dot/Math.sqrt(n1*n2),-1,1))*180/Math.PI}
+
+/* ============================== СИМУЛЯЦИЯ ============================== */
+function pickAction(strat,x,m,d,used,policy,w,idx){
+ const av=availTactics(m,S.stages).filter(t=>(used[t]||0)<3);
+ if(!av.length)return null;
+ if(strat==="B1")return av[(Math.random()*av.length)|0];
+ if(strat==="B2"){const order=["demo","interview","scarcity","emotional","closed","lossleader","upsell"];for(const t of order){if(av.includes(t)&&(used[t]||0)<1)return t}return av[0]}
+ if(strat==="B3"){let bt=null,bs=-1e9;for(const t of av){const eff=tacticEff(t);let s=0;for(const p in eff)s+=(w[p]||0)*eff[p];if(s>bs){bs=s;bt=t}}return bt}
+ // π*: политика решателя — прямое попадание или ближайшее состояние (тот же этап/глубина)
+ const key=S.activeParams.map(p=>Math.round((x[p]??0)*10)).join(",")+"|"+m+"|"+d;
+ if(policy){const r=(policy instanceof Map)?policy.get(key):policy[key];if(r&&r.rank){const pick=r.rank.find(a=>!(used[a]||0)&&av.includes(a));if(pick)return pick}}
+ if(idx){const k2=m+"|"+d;const list=(idx instanceof Map)?idx.get(k2):(idx[k2]||null);if(list){let bi=null,bd=1e18;for(const e of list){let dd=0;for(let i=0;i<e.v.length;i++){const cur=Math.round((x[S.activeParams[i]]??0)*10);dd+=(cur-e.v[i])*(cur-e.v[i])}if(dd<bd&&e.rank){const pick=e.rank.find(a=>!(used[a]||0)&&av.includes(a));if(pick){bd=dd;bi=pick}}}if(bi!=null)return bi}}
+ // резерв: максимальный немедленный сдвиг к цели (для π* — среди неиспользованных)
+ const avu=av.filter(t=>!(used[t]||0));const pool=(strat==="pi"&&avu.length)?avu:av;
+ let bt=null,bs=-1e9;for(const t of pool){const eff=tacticEff(t);let s=0;for(const p in eff)s+=(w[p]||0)*eff[p];if(s>bs){bs=s;bt=t}}return bt;
+}
+function runEpisode(strat,cfg,rng,policy,w,idx){
+ const per=PERSONAS[S.persona];const x={};for(const p of S.activeParams)x[p]=(per.x0[p]??0)+ (cfg.sigS>0?gauss(rng)*per.sigma*cfg.sigS:0);
+ for(const p of S.activeParams)x[p]=clamp(x[p],-1,1);
+ let m=0,profit=0,steps=0,used={},won=false,lost=false,resetStage=null;
+ for(let d=0;d<S.Tmax;d++){
+  const a=pickAction(strat,x,m,d,used,policy,w,idx);if(!a)break;
+  const eff=tacticEff(a,per);const u=used[a]||0;const fat=u===0?1:(u===1?.5:0);
+  const nx={};for(const p of S.activeParams){let dv=(eff[p]??0)*fat;if(u>=2)dv=(dv)+(-.10);nx[p]=clamp(x[p]+dv+(cfg.sigS>0?gauss(rng)*per.sigma*cfg.sigS:0),-1,1)}
+  profit-=S.tactics.costs[a]*cfg.cS;steps++;used[a]=u+1;
+  const crit=criticalHit(nx);
+  if(crit){lost=true;resetStage=["TOFU","MOFU","BOFU"][m];Object.assign(x,nx);break}
+  const nm=S.stages?Math.min(m+1,stageOf(nx)):m;if(S.stages&&nm>m)profit+=S.beta;
+  if((S.dealMode==="each"&&(nm===2||!S.stages))||(S.dealMode==="last"&&d===S.Tmax-1)){
+   const p=pBuy(nx,w);if(rng()<p){profit+=S.G;won=true;Object.assign(x,nx);m=nm;break}
+  }
+  Object.assign(x,nx);m=nm;
+ }
+ return{won,lost,profit,steps,resetStage}}
+function runSimCore(strats,n,seed,sigS,cS,policy,idx){
+ const w=normWeights();
+ const out={};
+ for(const st of strats){const rng=mulberry32(seed+hashStr(st));const eps=[];for(let i=0;i<n;i++)eps.push(runEpisode(st,{sigS,cS},rng,policy,w,idx));
+  const rngB=mulberry32(seed+7);
+  out[st]={conv:bootstrapCI(eps.map(e=>e.won?1:0),rngB),profit:bootstrapCI(eps.map(e=>e.profit),rngB),steps:mean(eps.map(e=>e.steps)),lost:eps.filter(e=>e.lost).length/eps.length,resetByStage:{TOFU:0,MOFU:0,BOFU:0},n};
+  for(const e of eps)if(e.resetStage)out[st].resetByStage[e.resetStage]++;
+ }
+ return out}
+function runSim(strats,n,seed,sigS,cS){return runSimCore(strats,n,seed,sigS,cS,LASTPOLICY,LASTPOLICY_IDX)}
+function hashStr(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(h,31)+s.charCodeAt(i))|0;return Math.abs(h)}
+
+/* ============================== КЛЕЙ / КОМПОЗИЦИЯ ============================== */
+function phiKey(a,b){return[a,b].sort().join("|")}
+function glueScore(ids,W){let sw=0,sp=0,sr=0;for(const id of ids){sw+=W[id]||0;const c=S.cells.find(c=>c.id===id);sr+=c?c.cost:0}
+ for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){const v=S.phi[phiKey(ids[i],ids[j])];if(v!=null&&isFinite(v))sp+=v}
+ return{score:(sw+sp)/(1+sr/Math.max(S.budget,1e-9))*(1-S.marsi.eps),sw,sp,sr}}
+function optimizeComposition(W){
+ const cells=S.cells.map(c=>c.id);const results=[];
+ const total=1<<cells.length;
+ for(let mask=1;mask<total;mask++){
+  const ids=[];let ok=true,sr=0;
+  for(let i=0;i<cells.length;i++)if(mask&(1<<i)){ids.push(cells[i]);sr+=S.cells[i].cost}
+  if(sr>S.budget)continue;
+  for(let i=0;i<ids.length&&ok;i++)for(let j=i+1;j<ids.length;j++)if(S.phi[phiKey(ids[i],ids[j])]===-Infinity)ok=false;
+  if(!ok)continue;
+  const g=glueScore(ids,W);results.push({ids,score:g.score,sw:g.sw,sp:g.sp,sr});
+ }
+ results.sort((a,b)=>b.score-a.score);return results.slice(0,5)}
+
+/* ============================== ЭКСПОРТ/ИМПОРТ ============================== */
+function exportJSON(){const b=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="marsibisplan-config.json";a.click()}
+function importJSON(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const s=JSON.parse(r.result);if(s.version===1){const lic=S.lic,used=S.usedCodes;S=Object.assign(DEFAULT_STATE(),s);S.lic=lic;S.usedCodes=used;save();renderAll();renderPricing();renderProjects();alert("Конфигурация загружена (лицензия устройства сохранена)")}else alert("Неверный формат файла")}catch(e){alert("Не удалось прочитать файл")}};r.readAsText(f)}
+/* ============================== UI: ТАБЫ / ОБЩЕЕ ============================== */
+const TABS=[["tab-guide","С чего начать"],["tab-method","Как это работает"],["tab-object","1. Объект"],["tab-marsi","2. Зоны и приоритеты"],["tab-tactics","3. Приёмы"],["tab-solve","4. Стратегия"],["tab-glue","5. Композиция"],["tab-sim","6. Проверка"],["tab-protocol","7. План"],["tab-pricing","Тарифы"],["tab-legal","Документы"]];
+let LASTPOLICY=null,LASTPOLICY_IDX=null,LASTSOLVE=null,LASTSIM=null,LASTSENS=null;
+function switchTab(id){for(const[sid]of TABS){$(sid).classList.toggle("on",sid===id)}document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===id));window.scrollTo(0,0)}
+function renderTabs(){const n=$("tabs");n.innerHTML="";for(const[id,label]of TABS){const b=document.createElement("button");b.textContent=label;b.dataset.tab=id;b.onclick=()=>switchTab(id);n.appendChild(b)}}
+function numIn(id,val,step,min,max){return `<input type="number" id="${id}" value="${val}" step="${step}" min="${min}" max="${max}" style="width:76px" onchange="${id}_ch(this.value)">`}
+
+/* ============================== 1. ОБЪЕКТ ============================== */
+/* ============================== ПРЕСЕТЫ ЦЕЛИ (детерминированный словарь, без нейросетей) ============================== */
+/* Логика доменного адаптера МАРСИ: меняются ярлыки и настройки, математика — та же */
+const GOAL_PRESETS={
+ deals:{name:"Максимум сделок",keys:["сделк","продаж","контракт","выручк","покупк","заказ"],
+  desc:"доверие + потребность + мотивация; порог сделки ниже на 10%",
+  w:{trust:.40,need:.25,motivation:.15,interest:.10,social:.05,emotion:.05},tau0:1.8,beta:1},
+ leads:{name:"Лиды и контакты",keys:["лид","контакт","база","заявк","квалифик","визит"],
+  desc:"интерес и потребность; бонус за переход этапа ×2",
+  w:{trust:.30,interest:.20,need:.25,social:.10,motivation:.10,emotion:.05},beta:2},
+ brand:{name:"Узнаваемость и трафик",keys:["узнава","бренд","охват","вниман","трафик","имидж","аудитор"],
+  desc:"внимание, интерес и эмоции в приоритете; бонус за этапы выше",
+  w:{attention:.25,interest:.25,emotion:.15,trust:.15,need:.10,social:.10},beta:1.5},
+ upsell:{name:"Средний чек и допродажи",keys:["апселл","апсейл","чек","допродаж","премиум","доращиван","upsell"],
+  desc:"мотивация и потребность ведут, доверие сохранено",
+  w:{motivation:.25,need:.25,trust:.25,interest:.10,social:.10,emotion:.05}}
+};
+function ensureParam(id,w){if(!S.activeParams.includes(id)){if(S.activeParams.length>=10)return false;S.activeParams.push(id);S.weights[id]=w??.05;S.x0[id]=(PERSONAS[S.persona].x0[id])??0}return true}
+function applyGoalPreset(id,silent){
+ if(!id||!GOAL_PRESETS[id]){S.goalPreset=null;S.goalParsed=null;const p=PERSONAS[S.persona];for(const k in p.w)S.weights[k]=p.w[k];save();renderObject();return}
+ const pr=GOAL_PRESETS[id];S.goalPreset={id,name:pr.name};
+ for(const k in pr.w){ensureParam(k,pr.w[k]);S.weights[k]=pr.w[k]}
+ if(pr.tau0)S.tau0=pr.tau0;
+ if(pr.beta)S.beta=pr.beta;
+ save();renderObject();renderProtocol();
+}
+function parseAndApplyGoal(){
+ const norm=(S.goal||"").toLowerCase().replace(/ё/g,"е");
+ for(const id in GOAL_PRESETS){if(GOAL_PRESETS[id].keys.some(k=>norm.includes(k))){S.goalParsed=id;applyGoalPreset(id);return}}
+ S.goalParsed=null;save();renderObject();
+}
+function renderObject(){
+ const p=PERSONAS[S.persona]||PERSONAS.b2b_dir;
+ $("objForm").innerHTML=`
+ <div class="grid g2">
+  <div>
+   <label class="f">Доменный адаптер МАРСИ (тип объекта)</label>
+   <select onchange="setAdapter(this.value)">${Object.entries(ADAPTERS).map(([k,a])=>`<option value="${k}" ${k===S.adapter?"selected":""}>${a.name}</option>`).join("")}</select>
+   <label class="f">Профиль целевой аудитории (θ)</label>
+   <select onchange="setPersona(this.value)">${Object.entries(PERSONAS).map(([k,v])=>{const lock=planRights().personas!=="all"&&!planRights().personas.includes(k);return `<option value="${k}" ${k===S.persona?"selected":""} ${lock?"disabled":""}>${v.name}${lock?" 🔒":""}</option>`}).join("")}</select>
+   <label class="f">Цель (максимум этапа) — словами, например «максимум сделок» или «сбор лидов»</label>
+   <input type="text" value="${esc(S.goal)}" onchange="S.goal=this.value;save();parseAndApplyGoal()">
+   <div id="goalHint" class="mini" style="margin:5px 0 2px;color:${S.goalParsed?"var(--green)":"var(--mut)"}">${S.goalParsed?`✓ Распознано: применён пресет «${GOAL_PRESETS[S.goalParsed].name}» — ${GOAL_PRESETS[S.goalParsed].desc}.`:S.goalPreset?`Активен пресет «${S.goalPreset.name}» — ${GOAL_PRESETS[S.goalPreset.id].desc}.`:"Введите цель словами — подходящий пресет применится автоматически (словарь, без нейросетей), или выберите его ниже."}</div>
+   <label class="f">Пресет цели (важность параметров, порог сделки, бонус за этап)</label>
+   <select onchange="applyGoalPreset(this.value)"><option value="">— по профилю аудитории, без пресета —</option>${Object.entries(GOAL_PRESETS).map(([k,v])=>`<option value="${k}" ${S.goalPreset&&S.goalPreset.id===k?"selected":""}>${v.name}</option>`).join("")}</select>
+  </div>
+  <div>
+   <div class="grid g3">
+    <div><label class="f">Бюджет, у.е.</label>${numIn("ob_budget",S.budget,1,1,1e6)}</div>
+    <div><label class="f">Прибыль с одной сделки</label>${numIn("ob_G",S.G,1,1,1e6)}</div>
+    <div><label class="f">Максимум приёмов на посетителя</label>${numIn("ob_T",S.Tmax,1,1,12)}</div>
+    <div><label class="f">γ — ценность времени</label>${numIn("ob_g",S.gamma,.05,.1,.99)}</div>
+    <div><label class="f">β (бонус за этап)</label>${numIn("ob_b",S.beta,.5,0,100)}</div>
+    <div><label class="f">Попытка сделки</label><select onchange="S.dealMode=this.value;save();renderObject()"><option value="each" ${S.dealMode==="each"?"selected":""}>на каждом шаге финального этапа</option><option value="last" ${S.dealMode==="last"?"selected":""}>после последнего приёма</option></select></div>
+    <div style="align-self:end"><label class="f" style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${S.stages?"checked":""} onchange="S.stages=this.checked;save()" style="width:auto"> Этапы TOFU/MOFU/BOFU</label></div>
+   </div>
+  </div>
+ </div>
+ <h3>Параметры состояния (достаточно 6–8)</h3>
+ <div class="pill-row">${PARAMS.filter(p=>!p.ret).map(p=>`<span class="pill ${S.activeParams.includes(p.id)?"on":""}" onclick="toggleParam('${p.id}')">${p.name}${p.crit?" ⚑":""}</span>`).join("")}</div>
+ <p class="mini">Психологические параметры посетителя: ${PARAMS.filter(p=>p.grp==="buyer").map(p=>`<span class="pill ${S.activeParams.includes(p.id)?"on":""}" onclick="toggleParam('${p.id}')">${p.name}</span>`).join(" ")}</p>
+ <p class="mini">⚑ — критический параметр по умолчанию (при −1 покупатель теряется). Критические параметры профиля: <b>${p.critical.map(c=>PNAME(c)).join(", ")||"—"}</b>. Всего активно: ${S.activeParams.length}${S.activeParams.length>8?" — превышено, решатель может работать медленно":""}</p>`;
+ window.ob_budget_ch=v=>{S.budget=Math.max(1,+v||1);save()};window.ob_G_ch=v=>{S.G=+v||20;save()};window.ob_T_ch=v=>{S.Tmax=clamp(+v||6,1,12);save()};window.ob_g_ch=v=>{S.gamma=clamp(+v||.9,.1,.99);save()};window.ob_b_ch=v=>{S.beta=+v||0;save()};
+ $("personaInfo").innerHTML=`<div class="kv"><span><b>${p.name}</b></span></div><p>${p.desc}</p>
+  <div class="chart" id="radarBox"></div>
+  <p class="mini">Важимость параметров для профиля: ${S.activeParams.map(id=>`${PNAME(id)} = ${fmt(S.weights[id]??0)}`).join(" · ")}</p>
+  <div class="pill-row noprint">${S.activeParams.map(id=>`<span title="вес параметра">${PNAME(id)}: <input type="number" step="0.05" min="0" max="1" value="${S.weights[id]??0}" style="width:60px" onchange="S.weights['${id}']=+this.value;save();renderObject()"></span>`).join("")}</div>`;
+ drawRadar("radarBox");
+}
+function toggleParam(id){const i=S.activeParams.indexOf(id);if(i>=0){if(S.activeParams.length<=2)return;S.activeParams.splice(i,1)}else{if(S.activeParams.length>=10){alert("Максимум 10 параметров");return}S.activeParams.push(id)}if(S.weights[id]==null){const p=PERSONAS[S.persona];S.weights[id]=p.w[id]??.1;S.x0[id]=p.x0[id]??0}save();renderObject()}
+function setAdapter(k){if(!confirm("Смена адаптера перезапишет текущие ячейки и матрицу Φjk. Продолжить?"))return;S.adapter=k;S.cells=null;S.phi=null;S.cellLinks=null;initData();save();renderAll()}
+function setPersona(k){S.persona=k;const p=PERSONAS[k];for(const id in p.w)S.weights[id]=p.w[id];for(const id in p.x0)S.x0[id]=p.x0[id];if(S.goalPreset&&GOAL_PRESETS[S.goalPreset.id])applyGoalPreset(S.goalPreset.id,true);save();renderAll()}
+
+/* ============================== 2. МАРСИ ============================== */
+function renderMarsi(){
+ const M=marsiCompute();
+ $("marsiCtrl").innerHTML=`
+ <div class="grid g3">
+  <div><label class="f">Поправка на неопределённость ε</label>${numIn("ms_eps",S.marsi.eps,.01,0,.5)}</div>
+  <div><label class="f">Сглаживание шкалы k</label>${numIn("ms_k",S.marsi.k,1,1,50)}</div>
+  <div><label class="f">Порог нормы (остановка)</label>${numIn("ms_norm",S.marsi.norm,.05,.05,.95)}</div>
+  <div><label class="f">Лимит итераций</label>${numIn("ms_mi",S.marsi.maxIter,1,1,50)}</div>
+  <div style="align-self:end"><label class="f">Итерация: <b>${S.marsi.iter}</b> / ${S.marsi.maxIter}</label></div>
+  <div style="align-self:end"><button class="btn" onclick="addCell()">+ Ячейка</button></div>
+ </div>
+ <div class="callout ${allBelow(M)?"ok":""}">${allBelow(M)?"Допустимая норма достигнута: все веса ниже порога — условие остановки выполнено.":"Корневая ячейка (зона валентности): <b>"+(M.root?M.root.name:"—")+"</b> — её решение даёт максимальный эффект на систему."}</div>`;
+ window.ms_eps_ch=v=>{S.marsi.eps=clamp(+v||0,0,.5);save();renderMarsi()};window.ms_k_ch=v=>{S.marsi.k=clamp(+v||1,1,50);save();renderMarsi()};window.ms_norm_ch=v=>{S.marsi.norm=clamp(+v||.35,.05,.95);save();renderMarsi()};window.ms_mi_ch=v=>{S.marsi.maxIter=clamp(+v||8,1,50);save();renderMarsi()};
+ let html=`<div class="scroll"><table><tr><th>Ячейка</th><th>Аспект</th>${MPARAMS.map(([k,n])=>`<th class="num gl" data-term="mp_${k}" title="${n}. Нажмите для пояснения">${k}</th>`).join("")}<th class="num gl" data-term="mp_r" title="Ресурсы. Нажмите для пояснения">r</th><th class="num gl" data-term="W" title="Вес зоны. Нажмите для пояснения">W</th><th class="num gl" data-term="impact" title="Влияние зоны. Нажмите для пояснения">impact</th><th>Связи (влияет на)</th><th></th></tr>`;
+ for(const c of S.cells){
+  html+=`<tr class="${M.root&&c.id===M.root.id?"hl":""}"><td><input type="text" value="${esc(c.name)}" onchange="renCell('${c.id}',this.value)" style="width:150px">${c.done?" <span class=\"badge b-green\">закрыта</span>":""}</td>
+  <td><select onchange="setCell('${c.id}','aspect',this.value)" style="width:130px">${ADAPTERS[S.adapter].aspects.map(a=>`<option ${a===c.aspect?"selected":""}>${a}</option>`).join("")}</select></td>`;
+  for(const[k]of MPARAMS){const Q=M_QUESTIONS[k];html+=`<td class="num"><input type="number" min="0" max="1" step="0.05" value="${c[k]}" style="width:52px" title="${Q?esc(Q.q+" Шкала: 0 = "+Q.a[0]+"; 0,5 = "+Q.a[1]+"; 1 = "+Q.a[2]):""}" onchange="setCell('${c.id}','${k}',this.value)"></td>`}
+  html+=`<td class="num"><input type="number" min="0" max="1" step="0.05" value="${c.r}" style="width:52px" title="${esc(M_QUESTIONS.r.q+" Шкала: 0 = "+M_QUESTIONS.r.a[0]+"; 0,5 = "+M_QUESTIONS.r.a[1]+"; 1 = "+M_QUESTIONS.r.a[2])}" onchange="setCell('${c.id}','r',this.value)"></td>
+  <td class="num"><b>${fmt(M.W[c.id],3)}</b></td><td class="num">${fmt(M.impact[c.id],3)}</td>
+  <td><span class="pill-row" style="flex-direction:column;align-items:flex-start">${S.cells.filter(o=>o.id!==c.id).map(o=>`<span class="pill ${((S.cellLinks[c.id]||[]).includes(o.id)?"on":"")}" style="font-size:11px;padding:1px 8px" onclick="toggleLink('${c.id}','${o.id}')">${esc(o.name)}</span>`).join("")}</span></td>
+  <td class="num"><button class="btn" style="padding:3px 8px;font-size:12px" title="Анкета зоны: 7 вопросов с готовыми вариантами" onclick="openQuiz('${c.id}')">📋</button> <button class="btn" style="padding:3px 8px;font-size:12px" title="Удалить зону" onclick="delCell('${c.id}')">✕</button></td></tr>`;
+ }
+ html+=`</table></div><p class="mini">Вес W объединяет важность, срочность, цену промедления, выгоду и доступность ресурсов — все ответы приводятся к единой шкале 0–1, а поправка на неопределённость честно снижает оценку при слабых данных. impact добавляет влияние зоны на связанные. ★ — корневая зона.</p>`;
+ $("marsiCells").innerHTML=html;
+ drawMarsiGraph("marsiGraph",M);
+ const sel=S.cells.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
+ $("marsiIter").innerHTML=`
+  <p class="mini">Внедрили доработку? Отметьте её: вес зоны снизится, связанные зоны пересчитаются, план обновится.</p>
+  <div class="grid g3">
+   <div><label class="f">Ячейка</label><select id="itCell">${sel}</select></div>
+   <div><label class="f">Микро-метод (что сделано)</label><input type="text" id="itMethod" placeholder="например: перенесли демонстрацию к входу"></div>
+   <div><label class="f">Обратная связь: <span id="itFbv">+0.3</span></label><input type="range" id="itFb" min="-1" max="1" step="0.1" value="0.3" oninput="document.getElementById('itFbv').textContent=(+this.value>=0?'+':'')+this.value"></div>
+  </div>
+  <button class="btn primary" onclick="doIter()">Выполнено → пересчёт</button>
+  <div id="iterLog" style="margin-top:8px">${S.marsi.log.map(l=>`<p class="mini">Итерация ${l.i}: ${esc(l.cell)} — ${esc(l.method||"микро-метод")} (fb ${l.fb>=0?"+":""}${l.fb})</p>`).join("")||"<p class='mini'>Итераций пока нет.</p>"}</div>`;
+}
+function allBelow(M){return S.cells.every(c=>M.W[c.id]<S.marsi.norm)}
+function setCell(id,k,v){const c=S.cells.find(c=>c.id===id);if(!c)return;if(k==="aspect")c.aspect=v;else if(k==="r")c.r=clamp(+v||0,0,1);else c[k]=clamp(+v||0,0,1);save();renderMarsi()}
+function renCell(id,v){const c=S.cells.find(c=>c.id===id);if(c&&v.trim())c.name=v.trim();save();renderMarsi()}
+function delCell(id){if(!confirm("Удалить ячейку?"))return;S.cells=S.cells.filter(c=>c.id!==id);delete S.cellLinks[id];for(const k in S.cellLinks)S.cellLinks[k]=S.cellLinks[k].filter(x=>x!==id);save();renderMarsi()}
+function addCell(){const id="c"+Date.now().toString(36);S.cells.push({id,name:"Новая ячейка "+(S.cells.length+1),aspect:ADAPTERS[S.adapter].aspects[0],cost:5,sup:[],t:.5,m:.5,f:.5,e:.5,y:.5,g:.5,h:.5,r:.5,done:false});S.cellLinks[id]=[];save();renderMarsi()}
+function toggleLink(a,b){const l=S.cellLinks[a]=S.cellLinks[a]||[];const i=l.indexOf(b);if(i>=0)l.splice(i,1);else l.push(b);save();renderMarsi()}
+function doIter(){const cid=$("itCell").value,fb=+$("itFb").value,m=$("itMethod").value.trim()||"микро-метод";const c=S.cells.find(x=>x.id===cid);if(!c){alert("Нет ячеек");return}marsiStep(cid,m,fb);const M=marsiCompute();if(allBelow(M)){c.done=true;alert("Допустимая норма достигнута (все W < порога) — условие остановки МАРСИ выполнено.")}renderMarsi()}
+
+/* ============================== 3. ТАКТИКИ ============================== */
+function renderTactics(){
+ let html=`<div class="scroll"><table><tr><th></th><th>Тактика</th><th>Группа</th><th class="num">c(a)</th><th>Этапы</th>${S.activeParams.map(p=>`<th class="num" title="${PNAME(p)}">${PNAME(p).split(/[ (]/)[0]}</th>`).join("")}><th>Обоснование</th></tr>`;
+ for(const t of TACTICS){const on=S.tactics.on[t.id];
+  html+=`<tr class="${on?"":"mut"}"><td><input type="checkbox" ${on?"checked":""} onchange="S.tactics.on['${t.id}']=this.checked;save();renderTactics()"></td>
+  <td><b>${t.name}</b><div class="mini">${t.desc}</div></td><td>${t.grp}</td>
+  <td class="num"><input type="number" step="0.1" min="0" value="${S.tactics.costs[t.id]}" style="width:60px" onchange="S.tactics.costs['${t.id}']=+this.value;save()"></td>
+  <td>${["TOFU","MOFU","BOFU"].map(st=>`<label class="mini" style="display:block"><input type="checkbox" ${S.tactics.stages[t.id].includes(st)?"checked":""} onchange="togSt('${t.id}','${st}',this.checked)" style="width:auto"> ${st}</label>`).join("")}</td>`;
+  for(const p of S.activeParams){const v=S.tactics.effects[t.id][p];html+=`<td class="num"><input type="number" step="0.05" min="-1" max="1" value="${v??0}" style="width:56px" onchange="S.tactics.effects['${t.id}']['${p}']=+this.value;save()"></td>`}
+  html+=`<td class="mini">${t.ch}</td></tr>`;
+ }
+ html+=`</table></div><p class="mini">Сила приёмов автоматически масштабируется чувствительностью выбранного профиля посетителя. «Возвратные» приёмы доступны на всех этапах.</p>
+ <button class="btn" onclick="resetTactics()">Вернуть калибровку по умолчанию</button>`;
+ $("tacticsTable").innerHTML=html;
+ const th=(st,thh)=>`<div class="grid g3">${Object.entries(thh).map(([p,v])=>`<div><label class="f">${PNAME(p)} ≥</label>${numIn("th_"+st+"_"+p,v,.05,-1,1)}</div>`).join("")}
+  <div style="align-self:end"><button class="btn" onclick="addTh('${st}')">+ параметр</button></div><div style="align-self:end"><select id="thAdd_${st}">${S.activeParams.filter(p=>!(p in thh)).map(p=>`<option value="${p}">${PNAME(p)}</option>`).join("")}</select></div></div>`;
+ $("thresholdsBox").innerHTML=`<p class="mini">Переход TOFU→MOFU при порогах MOFU; MOFU→BOFU при порогах BOFU. Потеря порогов → возврат на предыдущий этап (возвратные тактики).</p>
+ <h4>Пороги MOFU</h4>${th("MOFU",S.thresholds.MOFU)}<h4>Пороги BOFU</h4>${th("BOFU",S.thresholds.BOFU)}`;
+ window.th_chg_hooks={};for(const st of["MOFU","BOFU"])for(const[p,v]of Object.entries(S.thresholds[st])){window["th_"+st+"_"+p+"_ch"]=val=>{S.thresholds[st][p]=+val;save();renderTactics()}}
+}
+function togSt(tid,st,on){const a=S.tactics.stages[tid];const i=a.indexOf(st);if(on&&i<0)a.push(st);if(!on&&i>=0)a.splice(i,1);save();renderTactics()}
+function addTh(st){const p=$("thAdd_"+st).value;if(!p)return;S.thresholds[st][p]=.3;save();renderTactics()}
+function resetTactics(){const fx={},cs={},st={},on={};for(const t of TACTICS){fx[t.id]=Object.assign({},t.eff);cs[t.id]=t.cost;st[t.id]=t.stages.slice();on[t.id]=true}S.tactics={effects:fx,costs:cs,stages:st,on};save();renderTactics()}
+
+/* ============================== 4. РЕШАТЕЛЬ ============================== */
+function renderSolve(){
+ $("solveCtrl").innerHTML=`<button class="btn primary" onclick="runSolve()">▶ Подобрать оптимальную стратегию</button> <span class="mini">Пересчёт при смене любого параметра</span>`;
+ if(!LASTSOLVE){$("solveOut").innerHTML=`<p class="mini">Нажмите «Решить».</p>`;$("funnelChart").innerHTML="";$("autoChart").innerHTML=drawAuto();$("autoInfo").innerHTML=autoInfoText();return}
+ const sol=LASTSOLVE;
+ let html=`<div class="kv"><span>Ожидаемая прибыль на посетителя: <b>${fmt(sol.V0)}</b> у.е.</span><span>π* — детерминированное правило: одно состояние → один приём</span></div>
+ <h3>Оценка первого приёма (ожидаемая прибыль, у.е.)</h3><div class="scroll"><table><tr><th>Тактика</th><th class="num">ценность</th><th></th></tr>${sol.Q1.map((q,i)=>`<tr class="${i===0?"hl":""}"><td>${TNAME(q.a)}</td><td class="num"><b>${fmt(q.q)}</b></td><td class="mini">${i===0?"оптимальный первый ход":""}</td></tr>`).join("")}</table></div>
+ <h3>Оптимальная последовательность приёмов</h3><div class="scroll"><table><tr><th>Шаг</th><th>Тактика</th><th>Этап</th><th class="num">«холод–горячо»</th><th class="num">шанс сделки</th><th class="num">угол φ</th><th>Событие</th></tr>${sol.path.map(s=>`<tr><td>${s.d+1}</td><td><b>${TNAME(s.a)}</b></td><td>${["TOFU","MOFU","BOFU"][s.m]||"—"}</td><td class="num">${fmt(comp(s.x),3)}</td><td class="num">${fmtP(s.pb??0)}</td><td class="num">${s.angle==null?"—":fmt(s.angle,0)+"°"}</td><td>${s.crit?`<span class="badge b-red">сброс: критич. параметр ${PNAME(s.crit)}</span>`:(s.pb!=null&&s.pb>=.999?"<span class='badge b-green'>сделка вероятна</span>":"")}</td></tr>`).join("")}</table></div>`;
+ $("solveOut").innerHTML=html;
+ $("funnelChart").innerHTML=drawFunnel(sol);
+ $("autoChart").innerHTML=drawAuto();$("autoInfo").innerHTML=autoInfoText();
+}
+function comp(x){let s=0;const w=normWeights();for(const p in x)s+=w[p]*(x[p]??0);return s}
+function runSolve(){LASTSOLVE=solveMDP();LASTPOLICY=LASTSOLVE.policy;LASTPOLICY_IDX=LASTSOLVE.idx;S.solveLast={V0:LASTSOLVE.V0,Q1:LASTSOLVE.Q1,path:LASTSOLVE.path.map(s=>({a:s.a,m:s.m,angle:s.angle,crit:s.crit||null}))};save();renderSolve()}
+function autoInfoText(){return `<p class="mini">Пороги переходов берутся из раздела «Тактики». Самопетля — повтор воздействия с учётом новых данных; возвратные тактики — при потере порогов; −1 по критическому параметру — сброс интереса (s⁻).</p>`}
+
+/* ============================== ГРАФИКИ (SVG) ============================== */
+function sv(w,h,inner){return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="min-width:${Math.min(w,900)}px">${inner}</svg>`}
+function drawFunnel(sol){
+ const W=880,H=340,L=62,R=30,T=30,B=56;const n=sol.path.length;
+ const xs=i=>L+(W-L-R)*(n<=1?.5:i/(n-1));const ys=v=>T+(H-T-B)*(1-(v+1)/2);
+ let g=`<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/>`;
+ g+=`<line x1="${L}" y1="${ys(0)}" x2="${W-R}" y2="${ys(0)}" stroke="#dfe3ea" stroke-dasharray="4 4"/><text x="${L-8}" y="${ys(0)+4}" text-anchor="end" class="sv-tick">0</text>`;
+ for(const v of[-1,1]){g+=`<line x1="${L}" y1="${ys(v)}" x2="${W-R}" y2="${ys(v)}" stroke="#98a1b3"/><text x="${L-8}" y="${ys(v)+4}" text-anchor="end" class="sv-tick">${v>0?"+1 готов к покупке":"−1 потерян (сброс)"}</text>`}
+ g+=`<text x="${L}" y="18" class="sv-label">траектория «холод → горячо»: синие блоки — применённые тактики, φ — отклонение шага от цели</text>`;
+ let px=L,py=ys(clamp(comp(sol.x0),-1,1));g+=`<circle cx="${px}" cy="${py}" r="5" fill="#5b6577"/><text x="${px}" y="${py-10}" text-anchor="middle" class="sv-label">старт</text>`;
+ sol.path.forEach((s,i)=>{const cy=ys(clamp(comp(s.x),-1,1)),cx=xs(i+1);
+  g+=`<line x1="${px}" y1="${py}" x2="${cx}" y2="${cy}" stroke="#2456d6" stroke-width="2.2"/>`;
+  const mx=(px+cx)/2,my=(py+cy)/2;
+  if(s.angle!=null&&(cx-px)>=110)g+=`<text x="${mx}" y="${my-7}" text-anchor="middle" font-size="10" fill="#6a3fc0" stroke="#fff" stroke-width="3" paint-order="stroke" font-weight="600">φ=${fmt(s.angle,0)}°</text>`;
+  g+=`<rect x="${cx-65}" y="${cy-9}" width="130" height="19" rx="5" fill="#2456d6"/><text x="${cx}" y="${cy+4.5}" text-anchor="middle" fill="#fff" font-size="9.5">${TNAME(s.a).slice(0,21)}</text>`;
+  g+=`<circle cx="${cx}" cy="${cy}" r="4" fill="#2456d6"/>`;
+  if(s.crit){g+=`<text x="${cx}" y="${cy-15}" text-anchor="middle" fill="#c23a3a" font-size="11" stroke="#fff" stroke-width="3" paint-order="stroke" font-weight="600">✕ потерян</text>`}
+  if(s.pb!=null&&s.pb>=.999)g+=`<text x="${cx}" y="${cy-15}" text-anchor="middle" fill="#0e8a4d" font-size="11" stroke="#fff" stroke-width="3" paint-order="stroke" font-weight="600">сделка ✓</text>`;
+  px=cx;py=cy;});
+ return `<div class="chart">${sv(W,H,g)}</div>`;
+}
+function drawAuto(){
+ const W=880,H=310;const bx=i=>50+i*275;let g=`<rect width="${W}" height="${H}" fill="#fff"/>`;
+ const short=p=>PNAME(p).split(/[ (]/)[0];
+ const thM=Object.entries(S.thresholds.MOFU||{}).map(([p,v])=>`${short(p)} ≥ ${fmt(v,1)}`).join(", ");
+ const thB=Object.entries(S.thresholds.BOFU||{}).map(([p,v])=>`${short(p)} ≥ ${fmt(v,1)}`).join(", ");
+ const stages=[["TOFU · знакомство","внимание, интерес","знакомство с продуктом"],["MOFU · оценка","доверие, потребность",thM],["BOFU · решение","мотивация, действие",thB]];
+ g+=`<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#2456d6"/></marker><marker id="arrg" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#0e8a4d"/></marker><marker id="arrr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#c23a3a"/></marker></defs>`;
+ stages.forEach((st,i)=>{const X=bx(i);
+  g+=`<rect x="${X}" y="44" width="215" height="64" rx="12" fill="#e8eeff" stroke="#2456d6"/>`;
+  g+=`<text x="${X+107}" y="66" text-anchor="middle" font-size="13.5" font-weight="700" fill="#2456d6">${st[0]}</text>`;
+  g+=`<text x="${X+107}" y="84" text-anchor="middle" class="sv-label">${st[1]}</text>`;
+  g+=`<text x="${X+107}" y="101" text-anchor="middle" font-size="9.5" fill="#5b6577">${(st[2]||"—").slice(0,46)}</text>`;
+  if(i<2)g+=`<path d="M ${X+215} 76 L ${bx(i+1)-3} 76" stroke="#2456d6" stroke-width="2" marker-end="url(#arr)"/>`});
+ g+=`<path d="M ${bx(2)+60} 36 L ${bx(1)+215} 36" stroke="#6a3fc0" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#arr)"/><text x="${(bx(1)+215+bx(2)+60)/2}" y="28" text-anchor="middle" font-size="10" fill="#6a3fc0">возвратные тактики (при потере порога)</text>`;
+ g+=`<path d="M ${bx(1)+70} 108 C ${bx(1)+50} 150 ${bx(1)+160} 150 ${bx(1)+143} 108" stroke="#b97a12" fill="none" stroke-width="1.4" marker-end="url(#arr)"/><text x="${bx(1)+107}" y="172" text-anchor="middle" font-size="9.5" fill="#b97a12">самопетля: порог не пройден — повтор с новыми данными</text>`;
+ g+=`<rect x="${bx(2)+45}" y="215" width="130" height="34" rx="8" fill="#e4f5ec" stroke="#0e8a4d"/><text x="${bx(2)+110}" y="236" text-anchor="middle" fill="#0e8a4d" font-size="12" font-weight="700">s⁺ сделка</text>`;
+ g+=`<path d="M ${bx(2)+107} 108 L ${bx(2)+107} 215" stroke="#0e8a4d" stroke-width="2" marker-end="url(#arrg)"/><text x="${bx(2)+115}" y="150" font-size="9.5" fill="#0e8a4d">шанс сделки зависит от «тепла»</text>`;
+ g+=`<rect x="${bx(0)+20}" y="215" width="165" height="34" rx="8" fill="#fbeaea" stroke="#c23a3a"/><text x="${bx(0)+102}" y="236" text-anchor="middle" fill="#c23a3a" font-size="12" font-weight="700">s⁻ потеря интереса</text>`;
+ g+=`<path d="M ${bx(0)+107} 108 L ${bx(0)+100} 215" stroke="#c23a3a" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#arrr)"/><text x="${bx(0)+118}" y="150" font-size="9.5" fill="#c23a3a">критический параметр = −1</text>`;
+ g+=`<text x="50" y="16" class="sv-label">Путь по этапам: Знакомство → Оценка → Решение</text>`;
+ return `<div class="chart">${sv(W,H,g)}</div>`;
+}
+function drawRadar(box){
+ const p=PERSONAS[S.persona]||PERSONAS.b2b_dir;const axes=S.activeParams.slice(0,8);if(!axes.length)return;
+ const W=340,H=300,cx=W/2,cy=H/2+6,R=105;let g=`<rect width="${W}" height="${H}" fill="#fff"/>`;
+ for(let ring=1;ring<=4;ring++){const r=R*ring/4;g+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#e3e6ec"/>`}
+ const pt=(i,v)=>{const a=-Math.PI/2+2*Math.PI*i/axes.length;return[cx+r0(v)*Math.cos(a),cy+r0(v)*Math.sin(a)]};function r0(v){return R*(v+1)/2}
+ let poly="",poly2="";axes.forEach((ax,i)=>{const[qx,qy]=pt(i,clamp(S.weights[ax]??0,0,1));poly+=`${qx},${qy} `;const[zx,zy]=pt(i,clamp(S.x0[ax]??0,-1,1));poly2+=`${zx},${zy} `;const[lx,ly]=pt(i,1.08);g+=`<text x="${lx}" y="${ly}" class="sv-tick" text-anchor="middle">${PNAME(ax).split(/[ (]/)[0].slice(0,10)}</text>`});
+ g+=`<polygon points="${poly2}" fill="rgba(106,63,192,.18)" stroke="#6a3fc0"/><polygon points="${poly}" fill="rgba(36,86,214,.15)" stroke="#2456d6"/>`;
+ $(box).innerHTML=`<div class="chart" style="max-width:360px">${sv(W,H,g)}</div><div class="legend"><span><i style="background:#2456d6"></i>важимость параметров</span><span><i style="background:#6a3fc0"></i>стартовое состояние</span></div>`;
+}
+function drawMarsiGraph(box,M){
+ const n=S.cells.length;if(!n){$(box).innerHTML="<p class='mini'>Добавьте ячейки.</p>";return}
+ const W=580,H=400,cx=W/2,cy=H/2+4,R=132;const pos={};S.cells.forEach((c,i)=>{const a=-Math.PI/2+2*Math.PI*i/n;pos[c.id]=[cx+R*Math.cos(a),cy+R*Math.sin(a)]});
+ let g=`<rect width="${W}" height="${H}" fill="#fff"/>`;
+ for(const c of S.cells)for(const l of(S.cellLinks[c.id]||[]))if(pos[l])g+=`<line x1="${pos[c.id][0]}" y1="${pos[c.id][1]}" x2="${pos[l][0]}" y2="${pos[l][1]}" stroke="#98a1b3" stroke-width="1.2"/>`;
+ S.cells.forEach((c,i)=>{const[x,y]=pos[c.id];const r=12+26*(M.W[c.id]??0);const root=M.root&&M.root.id===c.id;
+  const ly=i%2===0?y+r+14:y-r-8;
+  g+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${root?"#0e8a4d":"#2456d6"}" fill-opacity=".85"/><text x="${x}" y="${y+3.5}" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${fmt(M.W[c.id],2)}</text><text x="${x}" y="${ly}" text-anchor="middle" font-size="9.5" fill="#5b6577">${esc(c.name).slice(0,14)}${root?" ★":""}</text>`});
+ g+=`<text x="12" y="18" class="sv-label">★ зона валентности — корневая ячейка; радиус круга ∝ весу W</text>`;
+ $(box).innerHTML=`<div class="chart" style="max-width:620px">${sv(W,H,g)}</div>`;
+}
+
+/* ============================== 5. КЛЕЙ ============================== */
+function renderGlue(){
+ const M=marsiCompute();const cells=S.cells;
+ const opts=v=>["-Infinity","-0.5","-0.3","-0.1","0","0.1","0.3","0.5","0.8"].map(o=>{const num=o==="-Infinity"?-Infinity:+o;return `<option value="${o}" ${v===num?"selected":""}>${o==="-Infinity"?"−∞ запрет":(num>0?"+":"")+o}</option>`}).join("");
+ let html=`<p class="mini">Совместимость пар зон: −∞ — запрет (никогда не вместе), минус — конфликт, плюс — синергия.</p><div class="scroll"><table><tr><th></th>${cells.map(c=>`<th class="sv-tick">${esc(c.name.slice(0,12))}</th>`).join("")}</tr>`;
+ for(const a of cells){html+=`<tr><th>${esc(a.name.slice(0,18))}</th>`;for(const b of cells){const k=phiKey(a.id,b.id);const v=S.phi[k]??0;html+=`<td style="background:${v===-Infinity?"#fbeaea":v>0?"#e4f5ec":v<0?"#fdf3e0":"#fff"}">${a.id===b.id?"—":`<select onchange="setPhi('${k}',this.value)" style="width:70px;font-size:11px">${opts(v)}</select>`}</td>`}html+="</tr>"}
+ html+=`</table></div>`;$("phiBox").innerHTML=html;
+ const top=optimizeComposition(M.W);S.glueTop=top;save();
+ if(!top.length){$("glueOut").innerHTML=`<div class="callout err">Нет допустимых наборов: проверьте бюджет (${fmt(S.budget,0)} у.е.) и запреты Φjk.</div>`;return}
+ const best=top[0];const set=new Set(best.ids);
+ let g=`<div class="callout ok"><b>Оптимальная композиция:</b> ${best.ids.map(id=>`<span class="badge b-blue">${esc(S.cells.find(c=>c.id===id).name)}</span>`).join(" ")}<br>Ценность набора: ${fmt(best.score,3)} · вес зон ${fmt(best.sw,3)} · совместимость ${fmt(best.sp,3)} · стоимость ${fmt(best.sr,0)} из ${fmt(S.budget,0)} у.е.</div>`;
+ g+=`<div class="scroll"><table><tr><th>#</th><th>Набор зон</th><th class="num">ценность</th><th class="num">ΣW</th><th class="num">ΣΦ</th><th class="num">Σr</th></tr>${top.map((t,i)=>`<tr class="${i===0?"hl":""}"><td>${i+1}</td><td>${t.ids.map(id=>esc(S.cells.find(c=>c.id===id).name)).join(" + ")}</td><td class="num"><b>${fmt(t.score,3)}</b></td><td class="num">${fmt(t.sw,3)}</td><td class="num">${fmt(t.sp,3)}</td><td class="num">${fmt(t.sr,0)}</td></tr>`).join("")}</table></div>`;
+ const pairs=[];best.ids.forEach((a,i)=>best.ids.slice(i+1).forEach(b=>{const v=S.phi[phiKey(a,b)];if(v!=null&&v!==0&&isFinite(v))pairs.push([a,b,v])}));
+ if(pairs.length){g+=`<h3>Обоснование склейки</h3><table><tr><th>Пара</th><th class="num">Φjk</th><th>Интерпретация</th></tr>${pairs.map(([a,b,v])=>`<tr><td>${esc(S.cells.find(c=>c.id===a).name)} × ${esc(S.cells.find(c=>c.id===b).name)}</td><td class="num">${v>0?"+":""}${v}</td><td>${v>0?"<span class='badge b-green'>синергия</span>":"<span class='badge b-amber'>конфликт — компенсируется составом набора</span>"}</td></tr>`).join("")}</table>`}
+ const excl=S.cells.filter(c=>!set.has(c.id));
+ if(excl.length)g+=`<p class="mini">Вне набора (бюджет/клей): ${excl.map(c=>esc(c.name)+" ("+fmt(c.cost,0)+" у.е.)").join(", ")}.</p>`;
+ $("glueOut").innerHTML=g;
+}
+function setPhi(k,v){S.phi[k]=v==="-Infinity"?-Infinity:+v;save();renderGlue()}
+
+/* ============================== 6. СИМУЛЯЦИЯ ============================== */
+function renderSim(){
+ $("simCtrl").innerHTML=`<div class="grid g3 noprint">
+  <div><label class="f">Виртуальных посетителей N ${planRights().simN<10000?"(лимит Free: 500)":"(без ограничений)"}</label>${numIn("sm_n",Math.min(S.sim.n,planRights().simN),1000,100,planRights().simN)}</div>
+  <div><label class="f">Зерно (воспроизводимость)</label>${numIn("sm_seed",S.sim.seed,1,1,1e9)}</div>
+  <div><label class="f">Шум Σ ×</label>${numIn("sm_sig",S.sim.sigS,.25,0,4)}</div>
+  <div><label class="f">Стоимости c(a) ×</label>${numIn("sm_c",S.sim.cS,.1,.1,5)}</div>
+  <div style="align-self:end"><button class="btn primary" onclick="runSimAll()">▶ Запустить</button></div>
+ </div>`;
+ window.sm_n_ch=v=>{S.sim.n=Math.max(100,+v||10000);save()};window.sm_seed_ch=v=>{S.sim.seed=+v||1;save()};window.sm_sig_ch=v=>{S.sim.sigS=+v||1;save()};window.sm_c_ch=v=>{S.sim.cS=+v||1;save()};
+ if(LASTSIM)drawSimResults();else $("simCharts").innerHTML="<p class='mini'>Нажмите «Запустить».</p>";
+ if(LASTSENS)drawSens();else $("sensOut").innerHTML="<p class='mini'>Чувствительность считается вместе с основным запуском.</p>";
+}
+/* ---- Web Worker: симуляция без блокировки интерфейса; собирается из тех же функций ядра ---- */
+let SIMWORKER=null,WORKER_OK=true;
+const WORKER_GLUE=`
+var S,PERSONAS,TACTICS,policy,idx;
+onmessage=function(ev){var d=ev.data;S=d.S;PERSONAS=d.PERSONAS;TACTICS=d.TACTICS;policy=d.policy;idx=d.idx;
+try{
+ var total=d.strats.length+3,done=0,out={};
+ for(var i=0;i<d.strats.length;i++){out[d.strats[i]]=runSimCore([d.strats[i]],d.n,d.seed,d.sigS,d.cS,policy,idx);done++;postMessage({type:"progress",frac:done/total})}
+ var sens={pts:[],c1:[],c13:[]};
+ var n2=Math.min(1500,Math.max(500,Math.round(d.n/6)));
+ var sgs=[.5,1,2];
+ for(var j=0;j<sgs.length;j++){var sg=sgs[j];
+  var a1=runSimCore(["pi","B2"],n2,d.seed+91,sg,1,policy,idx);
+  var a2=runSimCore(["pi","B2"],n2,d.seed+17,sg,1.3,policy,idx);
+  sens.pts.push(sg);sens.c1.push(a1.pi.profit.m-a1.B2.profit.m);sens.c13.push(a2.pi.profit.m-a2.B2.profit.m);
+  done++;postMessage({type:"progress",frac:done/total})}
+ postMessage({type:"done",main:out,sens:sens});
+}catch(e){postMessage({type:"error",msg:String(e&&e.message||e)})}};
+`;
+function buildSimWorker(){
+ const src=[clamp,sigmoid,gauss,mulberry32,hashStr,mean,bootstrapCI,normWeights,availTactics,tacticEff,pBuy,stageOf,criticalHit,pickAction,runEpisode,runSimCore].map(f=>f.toString()).join("\n\n")+"\n"+WORKER_GLUE;
+ const url=URL.createObjectURL(new Blob([src],{type:"text/javascript"}));
+ return new Worker(url);
+}
+function runSimAll(onDone){
+ if(!LASTPOLICY)runSolve();
+ S.sim.n=Math.min(S.sim.n,planRights().simN);
+ if(SIMWORKER){SIMWORKER.terminate();SIMWORKER=null}
+ if(WORKER_OK&&typeof Worker!=="undefined"){
+  try{
+   SIMWORKER=buildSimWorker();
+   const policyObj={};for(const[k,v]of LASTPOLICY)policyObj[k]={rank:v.rank};
+   const idxObj={};for(const[k,v]of LASTPOLICY_IDX)idxObj[k]=v;
+   const Ssnap=Object.assign({},S,{solveLast:null,sim:Object.assign({},S.sim,{last:null})});
+   SIMWORKER.onmessage=ev=>{const m=ev.data;
+    if(m.type==="progress"){$("simOut").innerHTML="<p class='mini'>Прогон симуляции: <b>"+Math.round(m.frac*100)+"%</b> — фоновый поток, интерфейс не блокируется</p>"}
+    else if(m.type==="done"){SIMWORKER.terminate();SIMWORKER=null;
+     LASTSIM=m.main;S.sim.last=JSON.parse(JSON.stringify(LASTSIM));LASTSENS=m.sens;save();
+     drawSimResults();drawSens();renderProtocol();if(onDone)onDone()}
+    else if(m.type==="error"){SIMWORKER.terminate();SIMWORKER=null;WORKER_OK=false;runSimAllSync(onDone)}};
+   SIMWORKER.onerror=()=>{try{SIMWORKER.terminate()}catch(e){}SIMWORKER=null;WORKER_OK=false;$("simOut").innerHTML="<p class='mini'>Фоновый поток недоступен в этом окружении (обычно file://) — считаю синхронно; на https-хостинге заработает автоматически.</p>";runSimAllSync(onDone)};
+   SIMWORKER.postMessage({S:Ssnap,PERSONAS,TACTICS,policy:policyObj,idx:idxObj,strats:["pi","B1","B2","B3"],n:S.sim.n,seed:S.sim.seed,sigS:S.sim.sigS,cS:S.sim.cS});
+   $("simOut").innerHTML="<p class='mini'>Прогон симуляции…</p>";
+   return;
+  }catch(e){WORKER_OK=false}
+ }
+ runSimAllSync(onDone);
+}
+function runSimAllSync(onDone){
+ LASTSIM=runSim(["pi","B1","B2","B3"],S.sim.n,S.sim.seed,S.sim.sigS,S.sim.cS);
+ S.sim.last=JSON.parse(JSON.stringify(LASTSIM));save();
+ const sens={pts:[],c1:[],c13:[]};const n2=Math.min(1500,Math.max(500,Math.round(S.sim.n/6)));
+ for(const sg of[.5,1,2]){const a1=runSim(["pi","B2"],n2,S.sim.seed+91,sg,1);const a2=runSim(["pi","B2"],n2,S.sim.seed+17,sg,1.3);sens.pts.push(sg);sens.c1.push(a1.pi.profit.m-a1.B2.profit.m);sens.c13.push(a2.pi.profit.m-a2.B2.profit.m)}
+ LASTSENS=sens;save();drawSimResults();drawSens();renderProtocol();if(onDone)onDone();
+}
+function drawSimResults(){
+ const R=LASTSIM;const names={pi:"π* — оптимальная",B1:"B1 — случайный выбор",B2:"B2 — типовой порядок",B3:"B3 — жадный выбор"};
+ let html=`<div class="scroll"><table><tr><th>Стратегия</th><th class="num">Конверсия</th><th class="num">95% ДИ</th><th class="num">Прибыль/посетитель</th><th class="num">95% ДИ</th><th class="num">Длина воронки</th><th class="num">Сбросы</th><th class="num">Сбросы по этапам (T/M/B)</th></tr>`;
+ for(const k of["pi","B2","B3","B1"]){const r=R[k];html+=`<tr class="${k==="pi"?"hl":""}"><td><b>${names[k]}</b></td><td class="num"><b>${fmtP(r.conv.m)}</b></td><td class="num">${fmtP(r.conv.lo)}–${fmtP(r.conv.hi)}</td><td class="num"><b>${fmt(r.profit.m)}</b></td><td class="num">${fmt(r.profit.lo)}–${fmt(r.profit.hi)}</td><td class="num">${fmt(r.steps)}</td><td class="num">${fmtP(r.lost)}</td><td class="num mini">${r.resetByStage.TOFU}/${r.resetByStage.MOFU}/${r.resetByStage.BOFU}</td></tr>`}
+ html+=`</table></div>`;
+ const h1=R.pi.conv.lo>R.B2.conv.hi,h2=R.pi.profit.lo>Math.max(R.B1.profit.hi,R.B2.profit.hi,R.B3.profit.hi);
+ html+=`<div class="callout ${h1?"ok":"warn"}"><b>H1</b> (конверсия π* &gt; типового порядка): ${h1?"<b>подтверждена</b> — нижняя граница ДИ π* выше верхней границы B2":"не подтверждена на этой конфигурации — диагностический результат: пересмотрите силу приёмов и пороги этапов"}.</div>`;
+ html+=`<div class="callout ${h2?"ok":"warn"}"><b>H2</b> (прибыль π* &gt; всех трёх подходов): ${h2?"<b>подтверждена</b>":"не подтверждена — сравните с B3: если жадная близка, ценность дальновидности мала при текущих стоимостях"}.</div>`;
+ $("simCharts").innerHTML=html+barsSVG(R);
+}
+function barsSVG(R){
+ const W=860,H=230,L=70,B=36;const keys=["B1","B2","B3","pi"];const names={pi:"π*",B1:"B1",B2:"B2",B3:"B3"};
+ let out="";
+ for(const[mx,lab,fmtv]of[["conv","Конверсия, %",v=>v*100],["profit","Прибыль на посетителя, у.е.",v=>v]]){
+  const vals=keys.map(k=>fmtv(R[k][mx].m));const los=keys.map(k=>fmtv(R[k][mx].lo));const his=keys.map(k=>fmtv(R[k][mx].hi));
+  const mn=Math.min(0,...los),mxv=Math.max(...his,1e-9);const y=v=>H-B-(H-B-20)*((v-mn)/(mxv-mn||1));
+  let g=`<rect width="${W}" height="${H}" fill="#fff"/><text x="${L}" y="14" class="sv-label">${lab}</text>`;
+  for(let i=0;i<=4;i++){const v=mn+(mxv-mn)*i/4;g+=`<line x1="${L}" y1="${y(v)}" x2="${W-10}" y2="${y(v)}" stroke="#eef0f4"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" class="sv-tick">${fmt(v,Math.abs(mxv)<10?1:0)}</text>`}
+  keys.forEach((k,i)=>{const bw=90;const x=L+30+i*(bw+70);const v=vals[i];const bx=x,by=y(v),bh=H-B-by;g+=`<rect x="${bx}" y="${by}" width="${bw}" height="${Math.max(bh,1)}" rx="4" fill="${k==="pi"?"#0e8a4d":"#2456d6"}" fill-opacity="${k==="pi"?".9":".55"}"/><line x1="${bx+bw/2}" y1="${y(los[i])}" x2="${bx+bw/2}" y2="${y(his[i])}" stroke="#1a2233" stroke-width="1.4"/><line x1="${bx+bw/2-6}" y1="${y(los[i])}" x2="${bx+bw/2+6}" y2="${y(los[i])}" stroke="#1a2233"/><line x1="${bx+bw/2-6}" y1="${y(his[i])}" x2="${bx+bw/2+6}" y2="${y(his[i])}" stroke="#1a2233"/><text x="${bx+bw/2}" y="${H-14}" text-anchor="middle" class="sv-tick">${names[k]}</text><text x="${bx+bw/2}" y="${by-6}" text-anchor="middle" class="sv-tick">${fmt(vals[i],Math.abs(mxv)<10?1:0)}</text>`});
+  out+=`<div class="chart">${sv(W,H,g)}</div>`;
+ }
+ return out;
+}
+function drawSens(){
+ const s=LASTSENS;const W=560,H=240,L=60,B=36;const mx=Math.max(...s.c1,...s.c13,0.1);const mn=Math.min(...s.c1,...s.c13,0);const x=v=>L+(W-L-20)*(v-.5)/1.5;const y=v=>H-B-(H-B-20)*((v-mn)/(mx-mn||1));
+ let g=`<rect width="${W}" height="${H}" fill="#fff"/><text x="${L}" y="14" class="sv-label">Преимущество π* над B2 (прибыль/посетитель) при росте шума Σ</text>`;
+ for(let i=0;i<=4;i++){const v=mn+(mx-mn)*i/4;g+=`<line x1="${L}" y1="${y(v)}" x2="${W-10}" y2="${y(v)}" stroke="#eef0f4"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" class="sv-tick">${fmt(v,1)}</text>`}
+ if(mn<0)g+=`<line x1="${L}" y1="${y(0)}" x2="${W-10}" y2="${y(0)}" stroke="#98a1b3" stroke-dasharray="4 3"/>`;
+ const line=(arr,col)=>{let d="";arr.forEach((v,i)=>{d+=(i?" L ":"M ")+x(s.pts[i])+" "+y(v)});return `<path d="${d}" fill="none" stroke="${col}" stroke-width="2.2"/>`+s.pts.map((p,i)=>`<circle cx="${x(p)}" cy="${y(arr[i])}" r="3.5" fill="${col}"/>`).join("")};
+ g+=line(s.c1,"#2456d6")+line(s.c13,"#c23a3a");
+ [0.5,1,2].forEach(p=>g+=`<text x="${x(p)}" y="${H-12}" text-anchor="middle" class="sv-tick">Σ×${p}</text>`);
+ g+=`<text x="${W-90}" y="28" class="sv-tick" fill="#2456d6">c(a)×1</text><text x="${W-90}" y="42" class="sv-tick" fill="#c23a3a">c(a)×1.3</text>`;
+ const byCost=[0,1,2].filter(i=>s.c13[i]>s.c1[i]).length,byNoise=s.c1[2]>s.c1[0]||s.c13[2]>s.c13[0];
+ const h3=byCost>=2||byNoise;
+ const dim=byCost>=2?("подтверждена по стоимости: при c(a)×1,3 преимущество выше на "+[0,1,2].filter(i=>s.c13[i]>s.c1[i]).length+" из 3 уровней шума"):(byNoise?"подтверждена по неопределённости: преимущество растёт с шумом Σ":"отклонена — диагностический результат: пересмотрите разброс реакций профиля и стоимости приёмов");
+ $("sensOut").innerHTML=`<div class="chart" style="max-width:600px">${sv(W,H,g)}</div><div class="callout ${h3?"ok":"warn"}"><b>H3</b> (преимущество π* растёт с неопределённостью Σ и стоимостью c(a)): ${dim}. Снижение преимущества при больших Σ — эффект насыщения: шум сам переводит посетителей через пороги, и ценность дальновидного управления сжимается.</div>`;
+}
+
+/* ============================== 7. ПРОТОКОЛ ============================== */
+S.ethics=S.ethics||{};
+function renderProtocol(){
+ const M=marsiCompute();
+ const wmOn=planRights().wm;
+ document.body.classList.toggle("free-print",wmOn);const p=PERSONAS[S.persona]||{};const sol=LASTSOLVE||null;const sim=LASTSIM||null;const glue=S.glueTop&&S.glueTop[0]?S.glueTop[0]:null;
+ const zoneFor=tid=>S.cells.filter(c=>(c.sup||[]).includes(tid)).map(c=>c.name).join(", ")||"—";
+ let html=`<div class="card"><h3>Паспорт объекта</h3><div class="kv">
+  <span>Объект: <b>${ADAPTERS[S.adapter].name}</b></span><span>ЦА: <b>${p.name||"—"}</b></span><span>Цель: <b>${esc(S.goal)}</b>${S.goalPreset?` <span class="badge b-blue">${S.goalPreset.name}</span>`:""}</span>
+  <span>Бюджет: <b>${fmt(S.budget,0)} у.е.</b></span><span>Маржа G: <b>${fmt(S.G)}</b></span><span>Горизонт: <b>${S.Tmax} тактик</b></span><span>γ: <b>${fmt(S.gamma)}</b></span>${wmOn?`<span><span class="badge b-amber">Free: план с водяным знаком, симуляция до 500 посетителей — вкладка «Тарифы»</span></span>`:""}</div></div><div class="wm">MarsiBisPlan · FREE</div><div class="wm2">Документ сформирован в бесплатной версии MarsiBisPlan</div>`;
+ html+=`<div class="card"><h3>Приоритеты зон (МАРСИ)</h3><div class="scroll"><table><tr><th>#</th><th>Ячейка</th><th>Аспект</th><th class="num">W</th><th class="num">impact</th><th>Статус</th></tr>${S.cells.slice().sort((a,b)=>M.impact[b.id]-M.impact[a.id]).map((c,i)=>`<tr class="${M.root&&c.id===M.root.id?"hl":""}"><td>${i+1}</td><td>${esc(c.name)}</td><td>${esc(c.aspect)}</td><td class="num">${fmt(M.W[c.id],3)}</td><td class="num">${fmt(M.impact[c.id],3)}</td><td>${M.root&&c.id===M.root.id?"<b>зона валентности ★</b>":M.W[c.id]<S.marsi.norm?"ниже нормы":""}</td></tr>`).join("")}</table></div><p class="mini">Итераций выполнено: ${S.marsi.iter}. ${allBelow(M)?"Допустимая норма достигнута.":""}</p></div>`;
+ if(sol){html+=`<div class="card"><h3>Оптимальная последовательность приёмов (π*)</h3><p>Ожидаемая прибыль на посетителя: ${fmt(sol.V0)} у.е. Первый приём: <b>${TNAME(sol.Q1[0]?.a)}</b>.</p><div class="scroll"><table><tr><th>Шаг</th><th>Тактика</th><th>Этап</th><th>Зона-носитель</th><th class="num">тепло</th><th class="num">угол φ</th><th class="num">шанс сделки</th></tr>${sol.path.map(s=>`<tr><td>${s.d+1}</td><td>${TNAME(s.a)}</td><td>${["TOFU","MOFU","BOFU"][s.m]}</td><td>${zoneFor(s.a)}</td><td class="num">${fmt(comp(s.x),3)}</td><td class="num">${s.angle==null?"—":fmt(s.angle,0)+"°"}</td><td class="num">${s.pb!=null?fmtP(s.pb):"—"}</td></tr>`).join("")}</table></div></div>`}
+ else html+=`<div class="card"><p class="mini">Решатель ещё не запускался — раздел 4.</p></div>`;
+ if(glue){html+=`<div class="card"><h3>Композиция (Клей Φjk)</h3><p><b>Выбранный набор:</b> ${glue.ids.map(id=>esc(S.cells.find(c=>c.id===id).name)).join(" + ")} · ценность=${fmt(glue.score,3)} · совместимость=${fmt(glue.sp,3)} · стоимость=${fmt(glue.sr,0)}/${fmt(S.budget,0)} у.е.</p></div>`}
+ if(sim){const R=sim;html+=`<div class="card"><h3>Ожидаемые KPI (виртуальный поток, N=${fmt(S.sim.n,0)})</h3><div class="scroll"><table><tr><th>Стратегия</th><th class="num">Конверсия</th><th class="num">Прибыль/посет.</th><th class="num">Длина</th><th class="num">Сбросы</th></tr>${["pi","B2","B3","B1"].map(k=>`<tr class="${k==="pi"?"hl":""}"><td>${{pi:"π*",B1:"B1",B2:"B2",B3:"B3"}[k]}</td><td class="num">${fmtP(R[k].conv.m)} <span class="mini">(${fmtP(R[k].conv.lo)}–${fmtP(R[k].conv.hi)})</span></td><td class="num">${fmt(R[k].profit.m)}</td><td class="num">${fmt(R[k].steps)}</td><td class="num">${fmtP(R[k].lost)}</td></tr>`).join("")}</table></div></div>`}
+ else html+=`<div class="card"><p class="mini">Симуляция ещё не запускалась — раздел 6.</p></div>`;
+ const eth=[["nudge1","Триггеры соответствуют реальным свойствам продукта (нет ложного дефицита)"],["nudge2","Сохраняется свобода выбора покупателя: nudge, а не манипуляция (Талер/Санстейн)"],["nudge3","Прозрачность обработки данных, согласие по ФЗ-152 при сборе данных о посетителях"]];
+ html+=`<div class="card"><h3>Этический чек-лист</h3><ul class="eth-list">${eth.map(([k,t])=>`<li class="${S.ethics[k]?"":"no"}" style="cursor:pointer" onclick="S.ethics['${k}']=!S.ethics['${k}'];save();renderProtocol()">${t}</li>`).join("")}</ul>${Object.values(S.ethics).filter(x=>x).length<3?"<div class='callout warn'>Отмечены не все пункты — протокол не соответствует этическим рамкам модели.</div>":"<div class='callout ok'>Этические рамки соблюдены.</div>"}</div>`;
+ html+=`<p class="mini">План собран в MarsiBisPlan · ${new Date().toLocaleString("ru-RU")} · принципы работы — в разделе «Как это работает».</p>`;
+ $("protoOut").innerHTML=html;
+}
+
+/* ============================== АВТОТЕСТ (контрольный пример) ============================== */
+function autotest(){
+ const bak=JSON.stringify(S);const checks=[];
+ try{
+  S.activeParams=["interest","trust"];S.weights={interest:.3,trust:.7};S.x0={interest:0,trust:0};S.persona="__example";
+  S.tactics={effects:{demo:{interest:.25,trust:.10},scarcity:{interest:.30,trust:-.15},interview:{interest:.05,trust:.30}},costs:{demo:2,scarcity:.5,interview:1.5},stages:{demo:["TOFU"],scarcity:["TOFU"],interview:["TOFU"]},on:{demo:true,scarcity:true,interview:true}};
+  S.Tmax=2;S.gamma=.9;S.G=20;S.k0=4;S.tau0=2;S.dealMode="last";S.stages=false;S.beta=1;
+  const sol=solveMDP();
+  const exp={interview:5.25,demo:3.36,scarcity:2.45};
+  const names={interview:"контрольное значение №1 (интервью)",demo:"контрольное значение №2 (демонстрация)",scarcity:"контрольное значение №3 (дефицит)"};
+  for(const q of sol.Q1){const e=exp[q.a];checks.push([names[q.a],Math.abs(q.q-e)<=.01])}
+  S.x0={interest:.6,trust:1};S.Tmax=1;const fin=solveMDP();const qs={};fin.Q1.forEach(q=>qs[q.a]=q.q);
+  checks.push(["логика «финишера»: срочность побеждает при высоком доверии",qs.scarcity>qs.interview]);
+ }catch(e){checks.push(["исполнение контрольного примера",false])}
+ S=JSON.parse(bak);
+ const inv=[];
+ const n0=marsiNorm(0),n1=marsiNorm(1);inv.push(["шкала нормализации 0–1",Math.abs(n0)<1e-12&&Math.abs(n1-1)<1e-12]);
+ S.marsi.eps=.3;const M1=marsiCompute();const g1=glueScore(S.cells.map(c=>c.id),M1.W).score;S.marsi.eps=.05;const M2=marsiCompute();const g2=glueScore(S.cells.map(c=>c.id),M2.W).score;inv.push(["поправка на неопределённость снижает оценку",g2>g1]);
+ if(S.cells.length>=2){const a=S.cells[0].id,b=S.cells[1].id;const kk=phiKey(a,b);const old=S.phi[kk];S.phi[kk]=-Infinity;const top=optimizeComposition(marsiCompute().W);const banned=top.every(tx=>!(tx.ids.includes(a)&&tx.ids.includes(b)));inv.push(["запрет совместного назначения работает",banned]);S.phi[kk]=old}
+ const all=[...checks,...inv];
+ const good=all.filter(c=>c[1]).length;
+ $("autotestOut").innerHTML=`<div style="margin-top:10px">${all.map(c=>`<p class="mini" style="margin:4px 0">${c[1]?"<span class='badge b-green'>✓</span>":"<span class='badge b-red'>✗</span>"} ${c[0]}</p>`).join("")}</div><div class="callout ${good===all.length?"ok":"err"}">${good===all.length?`Самопроверка пройдена: ${good} из ${all.length} проверок — математическое ядро работает корректно.`:`Пройдено ${good} из ${all.length} — есть расхождения, ядро требует внимания.`}</div>`;
+ renderAll();
+}
+
+/* ============================== ИНИЦИАЛИЗАЦИЯ ============================== */
+function renderAll(){renderObject();renderMarsi();renderTactics();renderSolve();renderGlue();renderSim();renderProtocol()}
+/* Демо-сценарий в один клик (вкладка «Инструкция») */
+function demoRun(){
+ if(!confirm("Загрузить демо-сценарий? Текущие данные будут заменены настройками по умолчанию: выставочный стенд, профиль «Директор по закупкам (B2B)», бюджет 60 у.е. Лицензия и сохранённые проекты не пострадают."))return;
+ const keep={lic:S.lic,usedCodes:S.usedCodes,projects:S.projects};
+ localStorage.removeItem("marsibisplan_v1");localStorage.removeItem("marsi_voronka_v1");
+ S=DEFAULT_STATE();S.ethics={nudge1:true,nudge2:true,nudge3:true};S.lic=keep.lic;S.usedCodes=keep.usedCodes;S.projects=keep.projects;initData();
+ LASTPOLICY=null;LASTPOLICY_IDX=null;LASTSOLVE=null;LASTSIM=null;LASTSENS=null;
+ renderAll();switchTab("tab-solve");runSolve();
+ S.sim.n=5000;
+ runSimAll(()=>{switchTab("tab-protocol");setTimeout(()=>alert("Демо готово. В разделе «7. План»: приоритеты зон с корневой зоной ★, оптимальная последовательность приёмов, композиция зон в бюджете и ожидаемые KPI против обычных подходов."),60)});
+}
+/* Яндекс.Метрика: впишите ID счётчика (например 12345678) при публикации — сейчас внешних вызовов нет */
+var YM_ID=null;
+if(YM_ID){(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(YM_ID,"init",{clickmap:true,trackLinks:true,accurateTrackBounce:true})}
+
+/* ============================== КОММЕРЦИЯ: тарифы, лицензии, оплата ============================== */
+const PRICING={pro_m:{name:"Pro — месяц",price:690,days:30},pro_y:{name:"Pro — год",price:5900,days:365},biz_m:{name:"Business — месяц",price:4900,days:30},biz_y:{name:"Business — год",price:39900,days:365},once:{name:"Готовый план — 30 дней",price:990,days:30}};
+const PLAN_RIGHTS={free:{projects:1,simN:500,personas:["b2b_dir","young"],wm:true,label:"Free"},once:{projects:10,simN:100000,personas:"all",wm:false,label:"Готовый план"},pro:{projects:10,simN:100000,personas:"all",wm:false,label:"Pro"},biz:{projects:50,simN:100000,personas:"all",wm:false,label:"Business"}};
+/* Пул кодов активации (проверка по SHA-256, без сервера). Таблица соответствий — у владельца: «MarsiBisPlan_запуск_продаж.xlsx». */
+const CODE_HASHES={pro_m:["08a6df9e27cace92c797376271a3ccfa9b5367dafd9ced65f504e1010a182de6","f1bdd8bc25a4b087ab7d9c9cc7cbdc679271267be6fbf43618215fbe60f9dd4c","e30ba70a350e8f074f7fd509eeb657eb0f2deb4a6b362c3573783fec1ac4f821","ce4eea72c47a09da7d4ce7f28488c8a3e66df950e20787121fdb3fae81cb470d","58b520a02152e56edc93f29bd0fa5486a30399ce973c5e18fbeefc04a2e38ee4","e7b48e7e5dc87d3c223b3f065f8094d4b6f307c0c0e3947dcd36f2bb09397622","c1c98263861786628eee8497e1368ffa2e32de2b67a90b98e6bd0760f6247168","5a41d6600fece1bf4a0146f37b4abcb1e02e415d8ba2eaaf200a26b9848d3671","c3d703823167bdc4009c9b172659e98d56d4b35c049854fb72e7a2b368e84874","7212634a508bf14e42803d62bd0a371b10d409a69b0d2e7e68611c6068ad0274","ae903e94377d6e74111e24107afa0d3a551aec33fde553dadf97cec47110940c","4b11b39070cd33e9730be9a76e494a6a555badbad56c671aa562504500799eb6","d5b4480d05770ddd8e7de6ed42d76d8404dfb20a9ce632f81d27d85ec2d88709","86334733e7d7e001f4ae55ab0515a5a45713557c19424257c63ced7b9b56b38d","e5b8eca9d2859a808b1fac0dcd1f8c1af1ef1ca4bbc1a25c55da831182f410ea","d109fd1e24ce52b562a98c0b9eb97ed22fd6c80796d2455a41cc18e56b671664","f205644a96504c68fdfd98d72ff635dee1780e5b713974e07a6cc5ea6199bafc","2c74a503600cf65dd68b09f40f701e0168c3be7a90fb9a9d18da3fc1e42884fd","a0742b8b915d88077e8fb1fa5a827b566c953825165eb6129dd1663bba58b5b3","e490a79fb3880c16c3d5901dded6b6bd40044f2a599403099353cbc073972964","c3cba9f732631e450c72327c78704726302d6c42f85223d3fc1ce31ac6718fc6","1fee759aa0ba5c8c83b0e164917d617199547cb5504b032ca1e83a901725784f","87bd11adf75ada52914742a9c39c7b1bafc13f251cd0fd7ebfdf5bd120f26c71","0d2a56fe1deee11e70786e00c3dc3a651b49c7eb8f5b3037e965ea4182e6cec9"],pro_y:["2edd170eb2a882c954b58caba0d00b4fe420274863d3ecd79c83ba3c6008d06c","1fffa02225d1bc3797d93820414b9be33d95c6e46d893e7252a824dfa5df76bb","0c96f8be745ebe43090750b1e2c10a4ec569b783d40f79db04b73f074d521366","1d07a37bdf82587a9f9f02aeec93a09e334a60a7ef454008d663c1fa13bac2cf","2e28666573c441a98f2ef7d9d69f96b3c807e3fa26b96bcdde04b7c520b27575","6d56c161a1992f73b2a76fe0a2bd8ddbd59344aa7121e819e8f00c0a1fd3c229","2f3923a342f4ef1c59c029de959ed65282b79025cdb5b38c1f851e5f5609709f","d51d2a62ff0dfd3fe487eda6cd3fc3ee6413544536c36a76ae8942c6a691b22d","6d462699b9ab48e4366e7b9c9d9b7bd75aec03c6dd6ea34b7f77da6d281e67e5","9d14840e372a05ec401121fbca3944beba0aca4a6f6ea63eee6f780505c3cc9f","b0ae0b1f4dfa3bb4071dd679f2b696359a8244aa2e73497f6091d6315d74451f","701c7c829c13221469b5425cb9929c51f007ec0c354b5063d308ec53c9423d3f"],biz_m:["80b390dd8e65a348f33ab7b23fcd5d1900802b15c98042932bc246930c5140d4","79325282978d805484f213341d2e679d97ba84d30975670c445175578d269ffe","cfa63ae0e1ef609077b1fb579c684e19cc9665dffa5bc033d59329eb8efec54e","bb404cc4ffaf2c77f9d0201f4f0188b0a0e82427218be53040d0e784405d8463","467cf2681a97a9de32374ae92aaffcbc3d0f88e83bba4364f7ba3d2bf66ba39b","1c5e01d8505733c907123861641c5f2e403f101acbc7e366e4bee9185c268f7d","95efa7f46dc78f64dee96df7982d5b4623bc9ec4b17dc17be6be16bc6ab7947b","0d35521a91a2057e3e12e1a82f80bc201df79212721147fea0facc45e19138ec","58c54c2debb7287892534e79752dabc5628a4bc4481d531f2ac333ae03d9efed","2af1727a01b771c9395f604cd0aaa8b7f992fafb62af0d143e27b447b2cbf0eb","7283b5d0b8fce36c1abb8e154af0ad815cb8c01d2b77dcd76495e3a295061256","d792298c11559532c70eebb7bdc1eca929acc57dd8678787673c1142f8a55a2e"],biz_y:["9cf1328dbf178844a51c3f52f86aa20e75445bfda4f35014770de48adf782875","c4005fa4162eb65d9f9bdc60170edc82f6a974d3637003a272be35c14609809b","2e32327b0cee38919e8ed50314ba99b3934f6040b8311f8d17282b5fd26950dc","87b2f04ce9fb1da5e57725bf94deb1adfaf7f009357a761b8c4384f088133376","caf71df9beca68bc967af7ed2271b7a41e4b4c4f0ed864ab62e515fd99751281","305710e3b1989b98014fef884d0d6b640ae447abf2a25d72b848d500b5fa3186","1cb2d6fc87ca1cf94101347f27066006457e5e0aaee99d97a84f4f6d9b2adeef","e34148f6ef5c2b190961c78d944ac5457aa4de858480bdf003379999ace7e696"],once:["a48662ecd5312c59b37cc50bd4cae23fe9bff1d395ba53cb82f3d51d8ad83987","92bef54e2aefb9164ae7a64863757fee9f86dcb9cf99b1bfd0830b0210ff036f","30a9e2088dec80dbcdd23d908f8dceabd391a165607e11c72c2fc3d3a01c6fe5","d5ac7ec2f1d2b836c2ea997131d396f77e68eb6313d77e89ca49eea4b1d9e3cc","2c4e462dbf0e2fb05358e70ce1415c4b115a5bcf0059ad91f1d5b07465bced4f","e226def1d4b5788421ef4429a1f30b1e292cfa46fd488db0bee94b0934e0a2cf","8cf0893590b64ea4f3476d7cf240510172e2626894fde9b7b51f5386643bd52c","26be7021c410cf5b6a8a0a8283aa4abd6bdc1100aee474c5cb2117cbdf67f293","ed8c6d535f06ec9b582d7521a775eaeda1262062978fc84300c5842982f485d8","e59a6b3b2c31b9711b30c1228793aa9c3a5bd28a809e36358cf3e4213a89cbb5","51df56a5b21863e39c2f7f9318ae850bdf5e5fa9675209e69ddfa49980e8e6dd","7f587e11b3ade1403f9437ade7d16db356cec196b362d65b92fbef8e5e400e5c","cb1a4d62f10d1d0a0a2579ff4b40ffc5542753bea7d95ec745f6624488584ce5","f0aaf3b537ec7e83943a534efb4c996a1ae588e4cbc864b130eeced809b80694","d5ff9c7a77a52cd2f147791acbbd9a4de62c24064f50144d1dbc25aa5251313c","ce09d5fd9efafdb2698ae9b242331636f55ac633017dfe33b3a16de9f84ae086","4d9aed0c686e137d4b22b32f178b2ebf447f67d086468cfe0939daf80e97820a","8e0dc76c32a165ac26edb025510f581383e3eef7f616a7ee66499c39f3e7fa11","d1631646c0a2e4f55e725815b2bebea04a33993cf278b79ae76275c0bdb7af68","9df612be3b362c4d037abc0c131beb02a886c87fb8672a5f06fe277812fb50a2"]};
+/* Конфиг владельца: платёжные ссылки Robokassa (личный кабинет → Инструменты оплаты → Платёжные ссылки) */
+const MBP_COMMERCE={supportEmail:"",robokassa:{pro_m:"#",pro_y:"#",biz_m:"#",biz_y:"#",once:"#"}};
+function planRights(){const p=(S.lic&&S.lic.plan)||"free";if(p!=="free"&&S.lic.until&&new Date(S.lic.until)>new Date())return PLAN_RIGHTS[p];return PLAN_RIGHTS.free}
+function planLabel(){const r=planRights();if(r.label==="Free")return"Free";const d=Math.ceil((new Date(S.lic.until)-new Date())/864e5);return r.label+" · осталось "+d+" дн."}
+async function activateCode(code){
+ code=(code||"").trim().toUpperCase();if(!code)return"Введите код активации.";
+ if((S.usedCodes||[]).includes(code))return"Этот код уже активирован на этом устройстве.";
+ let sha=null;
+ try{const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(code));sha=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("")}
+ catch(e){return"Браузер не поддерживает активацию (нужен HTTPS-хостинг)."}
+ for(const k in CODE_HASHES){if(CODE_HASHES[k].includes(sha)){
+  const plan=k.substring(0,3)==="biz"?"biz":(k==="once"?"once":"pro");
+  const base=(S.lic&&S.lic.plan===plan&&S.lic.until&&new Date(S.lic.until)>new Date())?new Date(S.lic.until):new Date();
+  const until=new Date(base.getTime()+PRICING[k].days*864e5);
+  S.lic={code,plan,until:until.toISOString()};S.usedCodes=(S.usedCodes||[]).concat(code);save();
+  renderPricing();renderProjects();renderObject();renderSim();renderProtocol();
+  return"OK: «"+PRICING[k].name+"» активирован до "+until.toLocaleDateString("ru-RU")+". Спасибо за поддержку!"}
+ }
+ return"Код не найден. Проверьте ввод (формат MBP-XXXX-XXXX) или напишите в поддержку."}
+function doActivate(){const v=$("actCode").value;activateCode(v).then(m=>{$("actOut").innerHTML=m.startsWith("OK")?"<div class='callout ok'>"+m+"</div>":"<div class='callout err'>"+m+"</div>"})}
+function pay(k){const url=MBP_COMMERCE.robokassa[k];
+ if(!url||url==="#"){alert("Кнопка оплаты будет активна после запуска продаж: владелец указывает платёжную ссылку Robokassa в конфиге MBP_COMMERCE внутри файла.");return}
+ window.open(url,"_blank");setTimeout(()=>{$("actOut").innerHTML="<p class='mini'>После оплаты введите код из письма в поле «Активация».</p>"},800)}
+function renderPricing(){
+ const r=planRights();
+ $("myPlanBox").innerHTML=`<div class="callout ${r.label==="Free"?"warn":"ok"}"><b>Ваш план:</b> ${planLabel()} · проектов: ${(S.projects||[]).length}/${r.projects} · посетителей в симуляции: до ${r.simN}${r.label==="Free"?" · профили аудитории: 2 из 7 · протокол с водяным знаком":""}</div>`;
+ const cards=[
+  {k:null,name:"Free",price:"0 ₽",items:["1 проект","2 профиля аудитории","500 виртуальных посетителей","протокол с водяным знаком","экспорт конфигурации JSON"]},
+  {k:"once",name:"Готовый план",price:"990 ₽ · 30 дней",items:["10 проектов","все 7 профилей аудитории","10 000 посетителей","без водяного знака","для разовой задачи"]},
+  {k:"pro_m",name:"Pro",price:"690 ₽/мес",items:["10 проектов","все профили","10 000+ посетителей","печать без водяного знака","приоритетная поддержка"],k2:"pro_y",price2:"Год: 5 900 ₽ (2 мес. в подарок)",rec:true},
+  {k:"biz_m",name:"Business",price:"4 900 ₽/мес",items:["50 проектов","все профили","без ограничений симуляции","white-label протоколы","для агентств и команд"],k2:"biz_y",price2:"Год: 39 900 ₽ (2 мес. в подарок)"}];
+ $("pricingCards").innerHTML=cards.map(c=>`<div class="card${c.rec?" rec":""}">${c.rec?`<span class="rec-badge">рекомендуем</span>`:""}<h3>${c.name}</h3><p style="font-size:18px;font-weight:700;color:var(--blue)">${c.price}</p><ul style="padding-left:18px;margin:10px 0">${c.items.map(i=>`<li class="mini">${i}</li>`).join("")}</ul>${c.k?`<button class="btn primary" onclick="pay('${c.k}')">Оплатить</button>${c.k2?` <button class="btn" onclick="pay('${c.k2}')">Годовая</button>`:""}`:"<span class='badge b-green'>активен по умолчанию</span>"}</div>`).join("");
+}
+/* ---- Проекты (сохранённые конфигурации) ---- */
+function saveProject(){
+ const r=planRights();S.projects=S.projects||[];
+ if(S.projects.length>=r.projects){alert("Лимит тарифа "+r.label+": "+r.projects+" проект(ов). Оформите Pro/Business во вкладке «Тарифы».");return}
+ const snap=JSON.parse(JSON.stringify(S));delete snap.projects;delete snap.lic;delete snap.usedCodes;delete snap.solveLast;
+ S.projects.push({id:Date.now().toString(36),name:(S.goal||"Проект")+" · "+ADAPTERS[S.adapter].name,savedAt:new Date().toLocaleString("ru-RU"),config:snap});
+ save();renderProjects();
+}
+function loadProject(id){
+ const pr=(S.projects||[]).find(x=>x.id===id);if(!pr)return;
+ if(!confirm("Загрузить проект «"+pr.name+"»? Текущие данные будут заменены."))return;
+ const lic=S.lic,used=S.usedCodes,proj=S.projects;
+ S=Object.assign(DEFAULT_STATE(),pr.config);
+ S.lic=lic;S.usedCodes=used;S.projects=proj;
+ initData();LASTSOLVE=null;LASTSIM=null;LASTSENS=null;LASTPOLICY=null;LASTPOLICY_IDX=null;
+ save();renderAll();switchTab("tab-object");
+}
+function delProject(id){if(!confirm("Удалить проект из списка?"))return;S.projects=(S.projects||[]).filter(x=>x.id!==id);save();renderProjects()}
+function renderProjects(){
+ const r=planRights();
+ $("projBox").innerHTML=`<div class="kv"><span>План: <b>${planLabel()}</b></span><span>Проектов: ${(S.projects||[]).length}/${r.projects}</span></div>
+ <button class="btn primary" title="Сохранит снимок всех вкладок (объект, зоны, приёмы, стратегия, композиция) под именем и датой" onclick="saveProject()">Сохранить текущий как проект</button>
+ <div style="margin-top:10px">${(S.projects||[]).map(p=>`<p class="mini" style="margin:6px 0"><b>${p.savedAt}</b> — ${p.name} <button class="btn" style="padding:2px 8px;font-size:12px" onclick="loadProject('${p.id}')">Открыть</button> <button class="btn" style="padding:2px 8px;font-size:12px" onclick="delProject('${p.id}')">✕</button></p>`).join("")||"<p class='mini'>Сохранённых проектов нет.</p>"}</div>`;
+}
+
+/* ============================== СЛОВАРЬ И ИНТЕРАКТИВНЫЕ ПОЯСНЕНИЯ ============================== */
+const GLOSSARY={
+anketa:{t:"Анкета зоны",c:"Зоны",d:"Пошаговый опрос по зоне: 7 вопросов с готовыми вариантами ответа вместо ввода чисел. Кнопка «Не знаю» ставит среднее значение и снижает достоверность зоны — вес пересчитается с поправкой на неуверенность. Реализует принцип МАРСИ: анкетирование вместо измерений.",a:["~анкет"]},
+project:{t:"Проект (сохранённый снимок)",c:"Общие",d:"Полный снимок всех вкладок — объект, зоны с их весами, приёмы, стратегия и композиция — под именем и датой. Позволяет параллельно вести несколько стендов или помещений и переключаться между ними одним кликом без потери данных. Хранится локально в браузере; лимит зависит от плана: Free — 1, Pro — 10, Business — 50.",a:["~проект"]},
+plan:{t:"План доступа (тариф)",c:"Общие",d:"Ваш текущий уровень сервиса: Free (бесплатно), «Готовый план», Pro или Business. Определяет лимиты — число проектов, виртуальных посетителей в симуляции, доступные профили аудитории и водяной знак при печати. Меняется во вкладке «Тарифы» после ввода кода активации.",a:["Ваш план","план доступа","плана доступа","плане доступа","план (тариф)"]},
+marsi:{t:"МАРСИ (метод)",c:"Зоны",d:"Метод Атомарного Разделения и Сопоставления Информации: большая задача «планировать стенд» разрезается на атомарные зоны, каждая оценивается числами, и движок собирает из них приоритеты и итоговый план. В сервисе отвечает за разделение объекта на зоны и их ранжирование.",a:["МАРСИ"]},
+cell:{t:"Зона (ячейка)",c:"Зоны",d:"Атомарный элемент объекта — «дальше не делится без потери смысла»: входовая зона, витрина, касса, переговорная. Оценивается восемью вопросами по шкале 0–1 и получает вес W.",a:["~ячейк","~зон (атомарн"]},
+mp_t:{t:"t — срочность",c:"Зоны",d:"Насколько быстро нужно заняться зоной, от 0 (не горит) до 1 (срочно). Один из восьми вопросов о зоне; влияет на её вес W.",a:["срочность"]},
+mp_m:{t:"m — связь с пространством",c:"Зоны",d:"Насколько зона завязана на физическое расположение: вход, поток людей, соседство. От 0 до 1.",a:["связь с пространств"]},
+mp_f:{t:"f — факты",c:"Зоны",d:"Насколько данные о зоне подтверждены замерами и опытом, а не догадками. Чем ниже, тем сильнее вес зоны «режется» поправкой на неопределённость.",a:["~факт"]},
+mp_e:{t:"e — соответствие цели",c:"Зоны",d:"Ведёт ли доработка зоны к вашей заявленной цели (сделки, лиды, узнаваемость). От 0 до 1.",a:[]},
+mp_y:{t:"y — цена промедления",c:"Зоны",d:"Что вы теряете, если не заняться зоной: потери трафика, денег, репутации. Чем выше — тем приоритетнее зона.",a:["ценность промедления","цена промедления"]},
+mp_g:{t:"g — достоверность оценки",c:"Зоны",d:"Как уверенно вы оценили остальные ответы о зоне. Низкая достоверность честно снижает вес зоны.",a:["~достоверност"]},
+mp_h:{t:"h — выгода (ROI)",c:"Зоны",d:"Сколько пользы принесёт доработка зоны по сравнению с вложениями. Один из самых весомых вопросов.",a:[]},
+mp_r:{t:"r — ресурсы",c:"Зоны",d:"Хватит ли денег и сил на доработку зоны. Это ограничитель: самая важная зона без ресурса не получит высокий приоритет.",a:["ресурс"]},
+eps:{t:"ε — поправка на неопределённость",c:"Зоны",d:"«Энтропия»: честно снижает вес зоны и ценность набора, когда данных мало. 0 — всё известно точно; 0,3 — много допущений.",a:["ε","~поправка на неопределённост","~энтропи"]},
+klog:{t:"k — сглаживание шкалы",c:"Зоны",d:"Форма шкалы 0–1: большие значения k сильнее «сплющивают» высокие оценки, отделяя «высокое» от «очень высокого».",a:["сглаживание шкалы"]},
+W:{t:"W — вес зоны",c:"Зоны",d:"Итоговый приоритет зоны: объединяет важность, срочность, цену промедления, выгоду и доступность ресурсов (все ответы приводятся к шкале 0–1). Чем выше W — тем раньше стоит заниматься зоной.",a:["W","вес зоны","весу W","вес каждой зоны"]},
+impact:{t:"impact — влияние зоны",c:"Зоны",d:"Вес зоны плюс вклад в связанные с ней зоны. Зона с максимальным влиянием помечается ★ — это корневая зона, с неё выгоднее всего начинать.",a:["impact","влияние зоны"]},
+root:{t:"★ корневая зона (зона валентности)",c:"Зоны",d:"Зона, решение которой даёт максимальный эффект на весь объект: у неё самый высокий показатель влияния. Всегда выделена в списке зон и на схеме.",a:["зона валентности","корневая зон"]},
+aspect:{t:"Аспект",c:"Зоны",d:"Группировка зон по смыслу: привлечение, демонстрация, переговоры, сделка, комфорт. Помогает не потерять ни одну часть объекта.",a:["аспект"]},
+micromethod:{t:"Микро-метод",c:"Зоны",d:"Конкретное действие по доработке зоны («перенесли демонстрацию к входу»). После внедрения отмечается во вкладке 2 с обратной связью — и веса пересчитываются.",a:["микро-метод"]},
+iteration:{t:"Итерация (шаг i → i+1)",c:"Зоны",d:"Один цикл работы: внедрили доработку → отметили → веса пересчитались → план обновился. Несколько итераций приводят объект к «норме».",a:["~итераци"]},
+norm:{t:"Порог нормы",c:"Зоны",d:"Уровень веса W, ниже которого зона считается «достаточно хорошей». Когда все зоны ниже порога — цикл доработок можно останавливать.",a:["порог нормы","допустимая норма"]},
+links:{t:"Связи зон",c:"Зоны",d:"Влияние зон друг на друга: вход работает на демонстрацию, очередь у кассы мешает переговорной. Учитываются при подсчёте влияния и в корневой зоне.",a:["связи между","связям между"]},
+funnel:{t:"Воронка",c:"Воронка",d:"Путь посетителя от первого взгляда до покупки. На каждом шаге часть людей «отваливается» — отсюда форма воронки.",a:["~воронк"]},
+scale:{t:"Шкала «холод — горячо»",c:"Воронка",d:"Состояние посетителя: −1 — потерян, 0 — нейтрален, +1 — готов купить. Все приёмы двигают человека по этой шкале.",a:["холод → горячо","холод — горячо","холод–горячо"]},
+state:{t:"Состояние посетителя",c:"Воронка",d:"Набор чисел от −1 до +1 (доверие, интерес, потребность и т.д.), описывающий посетителя «здесь и сейчас». Это и есть шкала «холод — горячо» в детализации.",a:["состояние посетителя","состояния посетителя"]},
+tofu:{t:"TOFU — знакомство",c:"Воронка",d:"Первый этап пути: человек только узнал о вас. Задача — внимание и интерес.",a:["TOFU"]},
+mofu:{t:"MOFU — оценка",c:"Воронка",d:"Средний этап: человек сравнивает варианты. Задача — доверие и понимание потребности.",a:["MOFU"]},
+bofu:{t:"BOFU — решение",c:"Воронка",d:"Финальный этап: человек готов купить. Задача — мотивация и последний шаг к сделке.",a:["BOFU"]},
+aida:{t:"AIDA",c:"Воронка",d:"Классическая модель шагов покупки: Внимание → Интерес → Желание → Действие. Используется как «подэтапы» внутри TOFU/MOFU/BOFU.",a:["AIDA","AIDMA","AISAS"]},
+trust:{t:"Доверие (параметр)",c:"Воронка",d:"Ключевой параметр состояния: готовность верить вам. Почти во всех профилях — критический: при падении до −1 посетитель теряется безвозвратно, даже если всё остальное хорошо.",a:["~довери"]},
+interest:{t:"Интерес (параметр)",c:"Воронка",d:"Насколько посетителю любопытно ваше предложение. Главный двигатель на этапе знакомства (TOFU).",a:["~интерес"]},
+need:{t:"Потребность (параметр)",c:"Воронка",d:"Понимание посетителя, что продукт решает его задачу. Растёт от демонстраций и правильных вопросов; на этапе оценки входит в порог перехода дальше.",a:["~потребност"]},
+motivation:{t:"Мотивация (параметр)",c:"Воронка",d:"Готовность действовать прямо сейчас. Главный параметр финального этапа (BOFU): без неё сделка не случается.",a:["~мотивац"]},
+social:{t:"Социальное влияние (параметр)",c:"Воронка",d:"Влияние окружения: отзывы, очереди, «все берут». Особенно важно для молодой аудитории и премиум-сегмента.",a:["социальное влияние"]},
+emotion:{t:"Эмоции (параметр)",c:"Воронка",d:"Эмоциональный отклик посетителя. Большинство решений о покупке принимается на эмоциях и лишь потом обосновывается логикой — поэтому параметр отдельный.",a:["~эмоци"]},
+attention:{t:"Внимание (параметр)",c:"Воронка",d:"Замечает ли вас посетитель вообще. Стартовая точка воронки; включается в расчёт пресетом «Узнаваемость и трафик».",a:["~внимани"]},
+tactic:{t:"Тактика (приём)",c:"Приёмы",d:"Конкретное действие к посетителю: живая демонстрация, дефицит, интервью, лосс-лидер. Каждый приём сдвигает параметры состояния и стоит денег.",a:["~тактик"]},
+rettact:{t:"Возвратные тактики",c:"Приёмы",d:"Приёмы «возврата» посетителя, потерявшего темп: повторная демонстрация, работа с возражениями. Дешёвые, доступны на любом этапе.",a:["~возвратн"]},
+threshold:{t:"Порог этапа",c:"Приёмы",d:"Условие перехода на следующий этап: например, «интерес ≥ 0,4» для входа в оценку. Задаётся во вкладке «Приёмы».",a:["порог этапа","пороги этапов"]},
+tau0:{t:"τ₀ — порог готовности к сделке",c:"Приёмы",d:"«Температура», после которой посетитель скорее купит, чем нет. Ниже порог — сделка легче (пресет «Максимум сделок» снижает его на 10%).",a:["τ₀","порог готовности","порог сделки"]},
+k0:{t:"k₀ — крутизна вероятности",c:"Приёмы",d:"Насколько резко шанс сделки растёт при «разогреве» посетителя. Большое k₀ — «пороговое» поведение: пока не разогрет, почти 0%; разогрет — почти 100%.",a:["k₀"]},
+pbuy:{t:"Шанс сделки",c:"Приёмы",d:"Вероятность, что «разогретый» до текущего состояния посетитель купит. Показывается в траектории и таблице стратегии.",a:["шанс сделки","вероятность сделки"]},
+wpar:{t:"Важность параметров (w)",c:"Приёмы",d:"Веса параметров внутри профиля аудитории: какие качества важнее для покупки. Настраиваются пресетом цели и вручную; влияют на шанс сделки.",a:["важность параметров","важности параметров"]},
+critical:{t:"Критический параметр",c:"Приёмы",d:"Параметр, при падении которого до −1 посетитель теряется навсегда — остальные достоинства не компенсируют. Обычно это доверие.",a:["~критическ"]},
+sminus:{t:"Потеря интереса (s⁻)",c:"Приёмы",d:"Безвозвратная потеря посетителя: критический параметр упал до −1. Фиксируется с указанием этапа, на котором человек «отвалился».",a:["потеря интереса"]},
+gamma:{t:"γ — ценность времени",c:"Приёмы",d:"Дисконт за промедление: сделка сейчас ценнее такой же сделки через час. 0,9 — стандарт; ниже — торопимся, выше — готовы ждать.",a:["γ","ценность времени"]},
+beta:{t:"β — бонус за этап",c:"Приёмы",d:"Награда модели за перевод посетителя на следующий этап (знакомство → оценка → решение). Пресет «Лиды» удваивает его: там важнее движение по этапам.",a:["β","бонус за этап","бонус за переход"]},
+Gm:{t:"Прибыль со сделки (G)",c:"Приёмы",d:"Средний заработок с одной покупки. Движок максимизирует именно прибыль, а не количество сделок: дешёвых «пустых» приёмов он избегает.",a:["маржа","прибыль с одной сделки"]},
+ca:{t:"Стоимость приёма c(a)",c:"Приёмы",d:"Сколько стоит одно применение приёма: время персонала, материалы, скидки. Вычитается из результата — движок не будет «жечь» бюджет.",a:["стоимость приём","стоимости приём"]},
+tmax:{t:"Максимум приёмов на посетителя",c:"Приёмы",d:"Горизонт планирования: сколько приёмов можно применить к одному посетителю, пока он не устал. По умолчанию 6.",a:["максимум приёмов","макс. приём"]},
+mu:{t:"μ — сила приёма",c:"Приёмы",d:"Насколько сильно приём сдвигает каждый параметр посетителя. Стартовые значения — из мета-анализов психологии влияния (Чалдини); правятся во вкладке «Приёмы».",a:["μ","сила приём"]},
+fatigue:{t:"Выгорание триггеров",c:"Приёмы",d:"Повторный приём работает вдвое слабее, третий — вредит доверию. Поэтому стратегия π* не повторяет один приём дважды.",a:["~выгорани","~усталост"]},
+reactance:{t:"Психологическое сопротивление",c:"Приёмы",d:"Отторжение, когда человек распознал манипуляцию (фальшивый таймер, «осталось 2 места»). Эффект приёма становится отрицательным — движок это учитывает.",a:["~сопротивлени"]},
+angle:{t:"φ — угол к цели",c:"Приёмы",d:"Насколько шаг ведёт в сторону цели: φ < 90° — движение к покупке, φ > 90° — в сторону от неё. Показывается на траектории.",a:["φ"]},
+pistar:{t:"π* — оптимальная стратегия",c:"Приёмы",d:"Лучшее правило выбора приёмов, найденное движком: для каждого состояния посетителя — один конкретный следующий приём. Детерминировано: одинаковое состояние → одинаковый приём.",a:["π*"]},
+persona:{t:"Профиль аудитории (θ)",c:"Воронка",d:"Портрет типичного посетителя: что ему важно (веса параметров), с чего начинает, как реагирует на приёмы. 7 готовых профилей — от директора по закупкам до скептика.",a:["~профил"]},
+cialdini:{t:"Чалдини (мета-анализы)",c:"Приёмы",d:"Роберт Чалдини — классик психологии влияния (дефицит, авторитет, взаимность…). Опубликованные размеры эффектов его триггеров — стартовая калибровка силы приёмов.",a:["~чалдини"]},
+phi:{t:"Φjk — совместимость зон",c:"Композиция",d:"Матрица «что с чем рядом»: плюс — зоны усиливают друг друга, минус — мешают, −∞ — запрет (нельзя вместе). Настраивается во вкладке «Композиция».",a:["Φ","совместимость зон","совместимости зон"]},
+synergy:{t:"Синергия",c:"Композиция",d:"Пара зон, усиливающих друг друга: демонстрация у входа работает на весь поток. Компоновщик предпочитает такие пары.",a:["~синерги"]},
+conflict:{t:"Конфликт зон",c:"Композиция",d:"Пара зон, мешающих друг другу: шумная касса рядом с переговорной. Набор получает штраф — либо зоны разводятся.",a:["~конфликт"]},
+ban:{t:"Запрет (−∞)",c:"Композиция",d:"Абсолютная несовместимость: дегустация рядом с текстилем. Движок никогда не поставит такие зоны в один набор.",a:["−∞","запрет"]},
+glue:{t:"Ценность набора",c:"Композиция",d:"Итоговая оценка набора зон: сумма весов + бонусы/штрафы совместимости − стоимость внедрения, с поправкой на неопределённость. Максимизируется в рамках бюджета.",a:["ценность набора"]},
+simv:{t:"Виртуальные посетители",c:"Проверка",d:"Тысячи синтетических «людей» вашего профиля аудитории со случайным разбросом реакций. На них стратегия проверяется до реального стенда.",a:["виртуальных посетителей","виртуальный поток","синтетическ"]},
+base123:{t:"B1 / B2 / B3 — эталоны сравнения",c:"Проверка",d:"Три «обычных» подхода: B1 — случайный выбор приёмов, B2 — типовой порядок «как всегда», B3 — жадный (максимум сиюминутного). Стратегия π* обязана обыгрывать их.",a:["B1","B2","B3"]},
+conv:{t:"Конверсия",c:"Проверка",d:"Доля виртуальных посетителей, дошедших до сделки. Главная метрика сравнения стратегий.",a:["~конверси"]},
+ci:{t:"Доверительный интервал",c:"Проверка",d:"Вилки «от — до», в которых с уверенностью 95% лежит истинное значение метрики. Узкая вилка — результату можно верить.",a:["~доверительн"]},
+bootstrap:{t:"Бутстреп",c:"Проверка",d:"Статистический способ посчитать доверительные интервалы: многократное «перемешивание» результатов прогона.",a:["бутстреп"]},
+sens:{t:"Анализ чувствительности",c:"Проверка",d:"Проверка «а что если»: как меняется преимущество стратегии при росте разброса реакций и стоимости приёмов. Показывает, насколько выводам можно доверять.",a:["~чувствительност"]},
+h123:{t:"Гипотезы H1–H3",c:"Проверка",d:"H1: стратегия π* конвертит лучше типового порядка. H2: прибыль π* выше всех трёх эталонов. H3: преимущество растёт с неопределённостью и ценой ошибок. Не подтвердилась — это диагностический сигнал, а не повод скрывать результат.",a:["H1","H2","H3"]},
+seed:{t:"Зерно генератора",c:"Проверка",d:"Номер «случайности»: одно и то же зерно даёт одну и ту же симуляцию. Нужно для воспроизводимости экспериментов.",a:["~зерн"]},
+npd:{t:"НПД (самозанятость)",c:"Деньги",d:"Налог на профессиональный доход: 4% с платежей физлиц, 6% — юрлиц, без обязательных взносов и бухгалтерии. Лимит дохода — 2,4 млн ₽ в год.",a:["НПД"]},
+rk:{t:"Робокасса",c:"Деньги",d:"Платёжный сервис, принимающий оплату на сайте: карты, СБП, Pay-методы. Комиссия только с успешных платежей; чеки покупателям формируются автоматически.",a:["~робокасс"]},
+smz:{t:"Чек по 422-ФЗ / Робочеки СМЗ",c:"Деньги",d:"Автоматический чек для покупателей самозанятого: сервис Робочеки СМЗ сам передаёт данные в налоговую, отдельная касса не нужна.",a:["422-ФЗ","Робочеки"]},
+code:{t:"Код активации",c:"Деньги",d:"Код формата MBP-XXXX-XXXX, который приходит после оплаты. Проверяется офлайн прямо в браузере — данные никуда не отправляются.",a:["код активации","кода активации"]}
+};
+/* Автолинкинг: decorations */
+const GL_BOUND="A-Za-zА-Яа-яЁё0-9";
+function glRegex(alias){
+ if(alias[0]==="~"){const b=alias.slice(1);return new RegExp("(^|[^"+GL_BOUND+"])("+b.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","i")}
+ return new RegExp("(^|[^"+GL_BOUND+"])("+alias.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")(?=$|[^"+GL_BOUND+"])","i")}
+const GL_ALIAS=[];
+for(const id in GLOSSARY){(GLOSSARY[id].a||[]).forEach(al=>GL_ALIAS.push({id,re:glRegex(al)}))}
+function escHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function decorateTerms(root){
+ if(!root)return;
+ const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(n){
+  if(!n.nodeValue||n.nodeValue.trim().length<2)return NodeFilter.FILTER_REJECT;
+  const p=n.parentElement;if(!p)return NodeFilter.FILTER_REJECT;
+  const tag=p.tagName;
+  if(["SCRIPT","STYLE","INPUT","TEXTAREA","SELECT","OPTION","BUTTON","A","TITLE"].includes(tag))return NodeFilter.FILTER_REJECT;
+  if(p.closest(".gl")||p.closest("svg")||p.closest("#glTip")||p.closest("#glossaryBox"))return NodeFilter.FILTER_REJECT;
+  return NodeFilter.FILTER_ACCEPT}});
+ const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+ for(const n of nodes){
+  const txt=n.nodeValue;const hits=[];
+  for(const al of GL_ALIAS){al.re.lastIndex=0;const m=al.re.exec(txt);
+   if(m){const st=m.index+m[1].length;hits.push({id:al.id,st,en:st+m[2].length})}}
+  if(!hits.length)continue;
+  hits.sort((a,b)=>a.st-b.st||(b.en-b.st)-(a.en-a.st));
+  const acc=[];let last=0;
+  for(const h of hits){if(h.st>=last){acc.push(h);last=h.en}}
+  let html="",pos=0;
+  for(const h of acc){html+=escHtml(txt.slice(pos,h.st));
+   const g=GLOSSARY[h.id];
+   html+='<a class="gl" tabindex="0" data-term="'+h.id+'" title="'+escHtml(g.d.slice(0,110))+'…">'+escHtml(txt.slice(h.st,h.en))+'</a>';
+   pos=h.en}
+  html+=escHtml(txt.slice(pos));
+  const tpl=document.createElement("template");tpl.innerHTML=html;
+  n.parentNode.insertBefore(tpl.content,n);n.parentNode.removeChild(n);
+ }}
+function showGlTip(id,el){
+ const g=GLOSSARY[id];if(!g)return;
+ const tip=document.getElementById("glTip")||(()=>{const d=document.createElement("div");d.id="glTip";document.body.appendChild(d);return d})();
+ tip.innerHTML="<b>"+g.t+"</b><span class='cat'>"+g.c+"</span><div>"+g.d+"</div><span class='open' onclick='openGlossary()'>Полный словарь →</span>";
+ tip.style.display="block";
+ const r=el.getBoundingClientRect(),tw=Math.min(340,window.innerWidth-16);
+ let x=clamp(r.left,8,window.innerWidth-tw-8);
+ let y=r.bottom+8;
+ if(y+tip.offsetHeight>window.innerHeight-8)y=r.top-tip.offsetHeight-8;
+ tip.style.left=x+"px";tip.style.top=Math.max(8,y)+"px";tip.style.maxWidth=tw+"px"}
+function hideGlTip(){const t=document.getElementById("glTip");if(t)t.style.display="none"}
+function openGlossary(){hideGlTip();switchTab("tab-method");setTimeout(()=>{const el=document.getElementById("glossaryCard");if(el)el.scrollIntoView({behavior:"smooth",block:"start"})},60)}
+document.addEventListener("click",e=>{
+ const a=e.target.closest("a.gl,.gl[data-term]");
+ if(a){e.preventDefault();e.stopPropagation();showGlTip(a.dataset.term,a);return}
+ if(!e.target.closest("#glTip"))hideGlTip()});
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape")hideGlTip();
+ const a=e.target.closest&&e.target.closest("a.gl,.gl[data-term]");
+ if(a&&(e.key==="Enter"||e.key===" ")){e.preventDefault();showGlTip(a.dataset.term,a)}});
+window.addEventListener("scroll",hideGlTip,{passive:true});
+function renderGlossary(q){
+ q=(q||"").toLowerCase().replace(/ё/g,"е");
+ const box=document.getElementById("glossaryBox");if(!box)return;
+ const cats={};
+ for(const id in GLOSSARY){const g=GLOSSARY[id];
+  const hay=(g.t+" "+g.d+" "+g.c).toLowerCase().replace(/ё/g,"е");
+  if(q&&!hay.includes(q))continue;
+  (cats[g.c]=cats[g.c]||[]).push(g)}
+ let html="";
+ for(const c of ["Общие","Зоны","Воронка","Приёмы","Композиция","Проверка","Деньги"]){
+  if(!cats[c])continue;
+  html+="<div class='gl-cat'>"+c+"</div>";
+  html+=cats[c].map(g=>"<details class='gl-item'><summary>"+g.t+"</summary><p>"+g.d+"</p></details>").join("")}
+ box.innerHTML=html||"<p class='mini'>Ничего не найдено — попробуйте другое слово.</p>"}
+let glTimer=null;
+const glObs=new MutationObserver(()=>{clearTimeout(glTimer);glTimer=setTimeout(()=>decorateTerms(document.querySelector("main")),150)});
+glObs.observe(document.querySelector("main"),{childList:true,subtree:true});
+
+load();initData();renderTabs();renderAll();renderPricing();renderProjects();switchTab("tab-guide");renderGlossary();decorateTerms(document.querySelector("main"));
+</script>
+</body>
+</html>
