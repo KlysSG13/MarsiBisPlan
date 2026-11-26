@@ -1,6 +1,8 @@
 # MarsiBisPlan — планировщик коммерческих пространств
 
-**Живое демо:** [klyssg13.github.io/MarsiBisPlan](https://klyssg13.github.io/MarsiBisPlan/) *(включите GitHub Pages: Settings → Pages → ветка `main`, папка `/` — см. ниже)*
+**Живое демо:** [klyssg13.github.io/MarsiBisPlan](https://klyssg13.github.io/MarsiBisPlan/)
+
+**Статус:** продукт готов к использованию; коммерческий запуск (домен, HTTPS-хостинг, эквайринг Robokassa) не произведён — это постоянные расходы, а бюджета на них сейчас нет. Демо живёт на GitHub Pages: это бесплатно, сервер не нужен. Чек-лист запуска продаж — в [PROJECT.md](PROJECT.md).
 
 Научно-обоснованный планировщик **выставочных стендов, торговых и бизнес-помещений и коммерческих композиций**: раскладывает объект на зоны, вычисляет их приоритеты, подбирает оптимальную последовательность приёмов продаж, проверяет совместимость зон и подтверждает план на виртуальном потоке из 10 000 посетителей — до того, как потрачены деньги на реальном объекте.
 
@@ -35,11 +37,11 @@ git clone https://github.com/KlysSG13/MarsiBisPlan.git
 open MarsiBisPlan/index.html   # macOS; или просто откройте index.html в браузере
 ```
 
-Для живого демо включите GitHub Pages: **Settings → Pages → Source: Deploy from a branch → `main` / `/ (root)` → Save**.
+Живое демо уже включено: GitHub Pages развёрнут из ветки `main` (бесплатный хостинг, сервер не нужен).
 
 ## Технологии
 
 HTML + CSS + чистый JavaScript, ноль зависимостей; localStorage для данных; Web Crypto (SHA-256) для активации; Web Worker для симуляций; печать через CSS `@media print`.
 
 ---
-Автор: [KlysSG13](https://github.com/KlysSG13) · Проект коммерческий: оплата через Robokassa (продавец — самозанятый, НПД), детали — в `financial_model.xlsx`.
+Автор: [KlysSG13](https://github.com/KlysSG13) · Проект коммерческий: оплата планируется через Robokassa (продавец — самозанятый, НПД), детали — в `financial_model.xlsx`; живых продаж пока нет — запуск по чек-листу в `PROJECT.md`.
